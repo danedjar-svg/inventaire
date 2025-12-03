@@ -4,7 +4,7 @@
 
 // Objet qui va contenir les infos des produits, rangés par code-barres
 // Exemple : { "123456789": { nom: "Stylo", stockCell: <td>, row: <tr> } }
-let produitsParCode = {};
+let produitsParCode = {}; 
 
 // ===============================
 //   FONCTION : login()
@@ -30,9 +30,9 @@ function login() {
 
         // On charge les données du fichier Data.csv et on remplit le menu + tableau
         getData();
-    } else {
+    } else {  
         // Si les identifiants sont faux, on affiche le message d'erreur
-        document.getElementById("login_error").style.display = "block";  
+        document.getElementById("login_error").style.display = "block";  // visible
     }
 } 
 
@@ -46,7 +46,7 @@ function logout() {
     document.getElementById("login_section").style.display = "block";
 
     // On cache la section inventaire
-    document.getElementById("inventory_section").style.display = "none";
+    document.getElementById("inventory_section").style.display = "none"; 
 
     // On vide le champ "Nom d'utilisateur"
     document.getElementById("login_username").value = "";

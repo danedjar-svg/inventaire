@@ -12,13 +12,13 @@
     <!-- Petites règles de style pour que ce soit plus lisible (facultatif mais pratique) -->
     <style>
         /* Applique une police simple à tout le corps de la page */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+        body {  /* Cible tout le corps de la page */
+            font-family: Arial, sans-serif; /* Police sans empattement */
+            margin: 20px; /* Espace autour du contenu */
         }
 
         /* Met une bordure et un peu d'espace autour des sections principales */
-        #login_section,
+        #login_section, /* Cible la section de connexion */
         #inventory_section { /* Cible les deux sections par leur ID */
             border: 1px solid #ccc; /* Bordure grise claire */
             padding: 15px; /* Espace intérieur */
@@ -27,28 +27,28 @@
         }
 
         /* Style pour les tableaux (lignes, bordures, etc.) */
-        table {
+        table { /* Cible tous les tableaux */
             border-collapse: collapse; /* Fusionne les bordures des cellules */
             width: 100%; /* Prend toute la largeur disponible */
             margin-top: 10px; /* Un peu d'espace au-dessus du tableau */
         }
 
         /* Bordures et padding pour les cellules de tableau */
-        th,
-        td {
-            border: 1px solid #999;
-            padding: 6px;
-            text-align: left;
+        th,    /* Cible les cellules d'en-tête */
+        td { /* Cible les cellules d'en-tête et de données */
+            border: 1px solid #999; /* Bordure grise */
+            padding: 6px;   /* Espace intérieur des cellules */
+            text-align: left; /* Aligne le texte à gauche */
         }
 
         /* Met le fond du titre de colonne en gris clair */
         th {
-            background-color: #f0f0f0;
+            background-color: #f0f0f0; /* Fond gris clair */
         }
 
         /* Style pour le message d'erreur de connexion */
         #login_error {
-            color: red;
+            color: red; /* Texte en rouge */ 
             display: none; /* Caché par défaut */
         }
     </style> <!-- Fin du style interne -->
