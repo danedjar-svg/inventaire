@@ -32,7 +32,7 @@ function login() {
         getData();
     } else {
         // Si les identifiants sont faux, on affiche le message d'erreur
-        document.getElementById("login_error").style.display = "block";
+        document.getElementById("login_error").style.display = "block";  
     }
 }
 
