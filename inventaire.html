@@ -1,0 +1,137 @@
+<!DOCTYPE html> <!-- Indique que le document est en HTML5 -->
+
+<html lang="fr"> <!-- La langue principale de la page est le français -->
+
+<head> <!-- Début de l'en-tête du document -->
+    <meta charset="UTF-8"> <!-- Encodage des caractères en UTF-8 (gère les accents, etc.) -->
+    <title>Gestion des Stocks</title> <!-- Titre de l'onglet dans le navigateur -->
+
+    <!-- Lien vers ton fichier JavaScript qui contient toutes les fonctions (login, getData, stock, etc.) -->
+    <script type="text/javascript" src="getData.js"></script> <!-- Charge le script getData.js -->
+
+    <!-- Petites règles de style pour que ce soit plus lisible (facultatif mais pratique) -->
+    <style>
+        /* Applique une police simple à tout le corps de la page */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        /* Met une bordure et un peu d'espace autour des sections principales */
+        #login_section,
+        #inventory_section { /* Cible les deux sections par leur ID */
+            border: 1px solid #ccc; /* Bordure grise claire */
+            padding: 15px; /* Espace intérieur */
+            margin-bottom: 20px; /* Espace extérieur en bas */
+            border-radius: 8px; /* Bords arrondis */
+        }
+
+        /* Style pour les tableaux (lignes, bordures, etc.) */
+        table {
+            border-collapse: collapse; /* Fusionne les bordures des cellules */
+            width: 100%; /* Prend toute la largeur disponible */
+            margin-top: 10px; /* Un peu d'espace au-dessus du tableau */
+        }
+
+        /* Bordures et padding pour les cellules de tableau */
+        th,
+        td {
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: left;
+        }
+
+        /* Met le fond du titre de colonne en gris clair */
+        th {
+            background-color: #f0f0f0;
+        }
+
+        /* Style pour le message d'erreur de connexion */
+        #login_error {
+            color: red;
+            display: none; /* Caché par défaut */
+        }
+    </style> <!-- Fin du style interne -->
+</head> <!-- Fin de l'en-tête -->
+
+<body> <!-- Début du corps de la page -->
+
+    <!-- =============================== -->
+    <!--       SECTION DE CONNEXION     -->
+    <!-- =============================== -->
+    <div id="login_section"> <!-- Conteneur de toute la zone de connexion -->
+        <h1>Connexion</h1> <!-- Titre principal pour la partie connexion -->
+
+        <!-- Champ pour le nom d'utilisateur -->
+        <label for="login_username">Nom d'utilisateur :</label> <!-- Etiquette liée au champ texte -->
+        <input type="text" id="login_username"> <!-- Zone de texte pour entrer le login -->
+        <br> <!-- Saut de ligne -->
+
+        <!-- Champ pour le mot de passe -->
+        <label for="login_password">Mot de passe :</label> <!-- Etiquette liée au champ mot de passe -->
+        <input type="password" id="login_password"> <!-- Zone de texte pour entrer le mot de passe (caché) -->
+        <br> <!-- Saut de ligne -->
+
+        <!-- Bouton pour lancer la tentative de connexion -->
+        <button type="button" onclick="login()">Se connecter</button> <!-- Appelle la fonction login() quand on clique -->
+
+        <!-- Paragraphe pour afficher un message d'erreur si les identifiants sont faux -->
+        <p id="login_error">Identifiants incorrects. Veuillez réessayer.</p> <!-- Caché par défaut, affiché par login() si erreur -->
+    </div> <!-- Fin de la section connexion -->
+
+    <!-- ===================================== -->
+    <!--   SECTION D'INVENTAIRE (APRÈS LOGIN) -->
+    <!-- ===================================== -->
+    <div id="inventory_section" style="display: none;"> <!-- Conteneur de la zone inventaire, caché au début -->
+
+        <!-- Bouton de déconnexion -->
+        <button type="button" onclick="logout()">Déconnexion</button> <!-- Appelle logout() pour revenir à la connexion -->
+
+        <!-- Titre principal de la partie inventaire -->
+        <h1>Inventaire</h1> <!-- Titre de la zone de gestion des stocks --> 
+
+        <!-- Paragraphe qui affiche le stock du produit actuellement sélectionné -->
+        <p id="affichage_stock">stock : 0</p> <!-- Texte de base, mis à jour par le JavaScript -->
+
+        <!-- Champ pour entrer une modification de stock (valeur absolue ou + / -) -->
+        <input type="text" id="input_stock"
+            placeholder="Entrer un stock (ex: 5, +5, -5)"> <!-- Zone saisie texte pour définir/modifier le stock -->
+
+        <!-- Bouton pour appliquer la valeur tapée dans le champ ci-dessus au produit sélectionné -->
+        <button type="button" onclick="definirStock()">Définir le Stock</button> <!-- Appelle definirStock() -->
+
+        <!-- Bouton pour ajouter +1 au stock du produit sélectionné dans la liste déroulante -->
+        <button type="button" onclick="stock()">Ajouter au stock</button> <!-- Appelle stock() pour +1 -->
+
+        <!-- Bouton pour retirer -1 au stock du produit sélectionné dans la liste déroulante -->
+        <button type="button" onclick="retrait()">Retirer du stock</button> <!-- Appelle retrait() pour -1 -->
+
+        <br> <!-- Saut de ligne visuel -->
+        <br> <!-- Deuxième saut de ligne pour aérer -->
+
+        <!-- ======================== -->
+        <!--  MENU DÉROULANT PRODUITS -->
+        <!-- ======================== -->
+
+        <!-- Etiquette pour le menu déroulant -->
+        <label for="productSelect">Choisir un produit :</label> <!-- Texte à côté du menu -->
+
+        <!-- Menu déroulant qui sera rempli automatiquement à partir de Data.csv par getData() -->
+        <select id="productSelect"> <!-- La liste des produits sera ajoutée ici en JavaScript -->
+            <option value="">-- Sélectionnez un produit --</option> <!-- Option par défaut quand rien n'est choisi -->
+        </select>
+
+        <br> <!-- Saut de ligne sous le menu déroulant -->
+        <br> <!-- Deuxième saut de ligne pour laisser de l'espace -->
+
+        <!-- ======================== -->
+        <!--   TABLEAU DES PRODUITS   -->
+        <!-- ======================== -->
+
+        <div id="product"></div> <!-- Conteneur vide : le tableau sera créé en JS et ajouté ici par getData() -->
+
+    </div> <!-- Fin de la section inventaire -->
+
+</body> <!-- Fin du corps de la page -->
+
+</html> <!-- Fin du document HTML -->

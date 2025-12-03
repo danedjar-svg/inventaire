@@ -1,0 +1,4 @@
+code_barre,nom_produit,stock,stock_min,stock_max
+1234567899876,produit_1,5,2,6
+9756314598723,produit_2,9,4,10
+6425987321458,produit_3,7,1,9
