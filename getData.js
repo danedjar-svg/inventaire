@@ -34,7 +34,7 @@ function login() {
         // Si les identifiants sont faux, on affiche le message d'erreur
         document.getElementById("login_error").style.display = "block";  
     }
-}
+} 
 
 
 // ===============================
@@ -119,16 +119,16 @@ function getData() {
             const productDiv = document.getElementById("product");
 
             // On vide ce qu'il y avait avant dans la div
-            productDiv.innerHTML = "";
+            productDiv.innerHTML = ""; // au cas où on recharge les données
 
             // On crée un élément <table>
-            const table = document.createElement("table");
+            const table = document.createElement("table"); // tableau HTML
 
             // On crée un <thead> (partie titre de colonnes)
-            const thead = document.createElement("thead");
+            const thead = document.createElement("thead"); // en-têtes
 
             // On crée un <tbody> (contenu des lignes de données)
-            const tbody = document.createElement("tbody");
+            const tbody = document.createElement("tbody"); // corps du tableau
 
             // On crée une ligne pour les en-têtes <tr>
             const trHead = document.createElement("tr");
