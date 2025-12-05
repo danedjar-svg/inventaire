@@ -4,7 +4,7 @@
 
 // Objet qui va contenir les infos des produits, rangés par code-barres
 // Exemple : { "123456789": { nom: "Stylo", stockCell: <td>, row: <tr> } }
-let produitsParCode = {}; 
+let produitsParCode = {};
 
 // ===============================
 //   FONCTION : login()
@@ -23,18 +23,18 @@ function login() {
         document.getElementById("login_section").style.display = "none";
 
         // On affiche la section inventaire
-        document.getElementById("inventory_section").style.display = "block"; 
+        document.getElementById("inventory_section").style.display = "block";
 
         // On cache un éventuel ancien message d’erreur
         document.getElementById("login_error").style.display = "none";
 
         // On charge les données du fichier Data.csv et on remplit le menu + tableau
         getData();
-    } else {  
+    } else {
         // Si les identifiants sont faux, on affiche le message d'erreur
         document.getElementById("login_error").style.display = "block";  // visible
     }
-} 
+}
 
 // ===============================
 //   FONCTION : logout()
@@ -45,7 +45,7 @@ function logout() {
     document.getElementById("login_section").style.display = "block";
 
     // On cache la section inventaire
-    document.getElementById("inventory_section").style.display = "none"; 
+    document.getElementById("inventory_section").style.display = "none";
 
     // On vide le champ "Nom d'utilisateur"
     document.getElementById("login_username").value = "";
@@ -127,6 +127,7 @@ function getData() {
 
             // On crée un <tbody> (contenu des lignes de données)
             const tbody = document.createElement("tbody"); // corps du tableau
+            tbody.id = "productBody"; // pour pouvoir le retrouver quand on ajoute un produit
 
             // On crée une ligne pour les en-têtes <tr>
             const trHead = document.createElement("tr");
@@ -141,7 +142,7 @@ function getData() {
                 trHead.appendChild(th);
             });
 
-            // --- AJOUT : colonne d'actions (+ / - / saisie) ---
+            // --- AJOUT : colonne d'actions (+ / - / saisie / OK / Supprimer) ---
             const thActions = document.createElement("th");
             thActions.textContent = "Actions";
             trHead.appendChild(thActions);
@@ -193,7 +194,7 @@ function getData() {
                     tr.appendChild(td);
                 });
 
-                // --- AJOUT : cellule avec boutons +, -, saisie et OK pour cette ligne ---
+                // --- cellule avec boutons +, -, saisie, OK et Supprimer pour cette ligne ---
                 const tdActions = document.createElement("td");
 
                 // Bouton +
@@ -230,10 +231,38 @@ function getData() {
                     document.getElementById("productSelect").value = codeBarre;
                     // On copie la saisie de la ligne dans le champ global
                     document.getElementById("input_stock").value = inputLigne.value.trim();
-                    // On réutilise ta fonction existante definirStock()
+                    // On réutilise la fonction existante definirStock()
                     definirStock();
                     // On vide le champ de la ligne après application
                     inputLigne.value = "";
+                };
+
+                // Bouton Supprimer
+                const btnSuppr = document.createElement("button");
+                btnSuppr.textContent = "Supprimer";
+                btnSuppr.onclick = function () {
+                    if (!confirm("Supprimer ce produit ?")) return;
+
+                    // 1) On supprime la ligne du tableau
+                    tr.remove();
+
+                    // 2) On supprime le produit de l'objet global
+                    delete produitsParCode[codeBarre];
+
+                    // 3) On supprime l’option du menu déroulant
+                    const select = document.getElementById("productSelect");
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === codeBarre) {
+                            select.remove(i);
+                            break;
+                        }
+                    }
+
+                    // 4) Si ce produit était sélectionné, on remet l’affichage du stock à 0
+                    if (select.value === codeBarre) {
+                        select.value = "";
+                        document.getElementById("affichage_stock").textContent = "stock : 0";
+                    }
                 };
 
                 // On place les boutons et la saisie dans la cellule
@@ -241,6 +270,7 @@ function getData() {
                 tdActions.appendChild(btnMoins);
                 tdActions.appendChild(inputLigne);
                 tdActions.appendChild(btnOk);
+                tdActions.appendChild(btnSuppr);
 
                 // On ajoute la cellule d'actions à la ligne
                 tr.appendChild(tdActions);
@@ -431,29 +461,29 @@ function definirStock() {
         // Nouveau stock = ancien + nombre
         nouveau_stock = stockActuel + nombre;
 
-    // Si la saisie commence par "-"
+        // Si la saisie commence par "-"
     } else if (saisie[0] === "-") {
         // On lit le nombre après le "-"
         const nombre = parseInt(saisie.substring(1));
         // Si ce n'est pas un nombre, on signale une erreur
         if (isNaN(nombre)) {
-            alert("Saisie invalide.");
-            return;
+            alert("Saisie invalide."); // alerte si la saisie n'est pas celle attendue
+            return; // on sort de la fonction
         }
         // Nouveau stock = ancien - nombre
-        nouveau_stock = stockActuel - nombre; 
+        nouveau_stock = stockActuel - nombre; // retrait
 
-    // Sinon, on considère que c'est une valeur absolue (ex : "12")
+        // Sinon, on considère que c'est une valeur absolue (ex : "12")
     } else {
         // On convertit directement en nombre
-        const nombre = parseInt(saisie);
+        const nombre = parseInt(saisie); // conversion de la saisie en nombre entier
         // Si ce n'est pas un nombre, on signale une erreur
         if (isNaN(nombre)) {
-            alert("Saisie invalide.");
-            return;
+            alert("Saisie invalide."); // alerte si la saisie n'est pas celle attendue
+            return;  // on sort de la fonction
         }
         // Nouveau stock = nombre saisi
-        nouveau_stock = nombre; 
+        nouveau_stock = nombre; // affectation du nouveau stock
     }
 
     // On empêche le stock d’être négatif
@@ -465,8 +495,144 @@ function definirStock() {
     info.stockCell.textContent = nouveau_stock;
 
     // On met à jour l’affichage "stock : X"
-    document.getElementById("affichage_stock").textContent = "stock : " + nouveau_stock;
+    document.getElementById("affichage_stock").textContent = "stock : " + nouveau_stock; // affichage
 
     // On vide le champ de saisie global
     document.getElementById("input_stock").value = "";
+}
+
+// ===============================
+//   FONCTION : ajouterProduit()
+//   (ajout d'une nouvelle ligne + option menu)
+// ===============================
+function ajouterProduit() {
+    const codeBarre = document.getElementById("new_code").value.trim();
+    const nomProduit = document.getElementById("new_name").value.trim();
+    const stock = parseInt(document.getElementById("new_stock").value) || 0;
+    const stockMin = parseInt(document.getElementById("new_min").value) || 0;
+    const stockMax = parseInt(document.getElementById("new_max").value) || 0;
+
+    // Vérifs de base
+    if (!codeBarre || !nomProduit) {
+        alert("Code-barres et nom sont obligatoires.");
+        return;
+    }
+
+    // Ne pas écraser un produit existant
+    if (produitsParCode[codeBarre]) {
+        alert("Un produit avec ce code-barres existe déjà.");
+        return;
+    }
+
+    // On récupère le tbody du tableau
+    const tbody = document.getElementById("productBody");
+    if (!tbody) {
+        alert("Tableau non trouvé.");
+        return;
+    }
+
+    // Création de la ligne
+    const tr = document.createElement("tr");
+    tr.dataset.codeBarre = codeBarre;
+
+    // Colonnes : code, nom, stock, stock mini, stock maxi
+    const valeurs = [codeBarre, nomProduit, stock, stockMin, stockMax];
+
+    valeurs.forEach((valeur, index) => {
+        const td = document.createElement("td");
+        td.textContent = valeur;
+
+        if (index === 2) {
+            td.classList.add("stockCell");
+        }
+
+        tr.appendChild(td);
+    });
+
+    // --- même cellule d'actions que pour les lignes du CSV ---
+    const tdActions = document.createElement("td");
+
+    const btnPlus = document.createElement("button");
+    btnPlus.textContent = "+";
+    btnPlus.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        stock();
+    };
+
+    const btnMoins = document.createElement("button");
+    btnMoins.textContent = "-";
+    btnMoins.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        retrait();
+    };
+
+    const inputLigne = document.createElement("input");
+    inputLigne.type = "text";
+    inputLigne.size = 5;
+    inputLigne.placeholder = "5, +5, -3";
+
+    const btnOk = document.createElement("button");
+    btnOk.textContent = "OK";
+    btnOk.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        document.getElementById("input_stock").value = inputLigne.value.trim();
+        definirStock();
+        inputLigne.value = "";
+    };
+
+    const btnSuppr = document.createElement("button");
+    btnSuppr.textContent = "Supprimer";
+    btnSuppr.onclick = function () {
+        if (!confirm("Supprimer ce produit ?")) return;
+
+        tr.remove();
+        delete produitsParCode[codeBarre];
+
+        const select = document.getElementById("productSelect");
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === codeBarre) {
+                select.remove(i);
+                break;
+            }
+        }
+
+        if (select.value === codeBarre) {
+            select.value = "";
+            document.getElementById("affichage_stock").textContent = "stock : 0";
+        }
+    };
+
+    tdActions.appendChild(btnPlus);
+    tdActions.appendChild(btnMoins);
+    tdActions.appendChild(inputLigne);
+    tdActions.appendChild(btnOk);
+    tdActions.appendChild(btnSuppr);
+
+    tr.appendChild(tdActions);
+    // --- fin actions ---
+
+    // On ajoute la ligne au tableau
+    tbody.appendChild(tr);
+
+    // On enregistre dans l’objet global
+    const stockCell = tr.querySelector(".stockCell");
+    produitsParCode[codeBarre] = {
+        nom: nomProduit,
+        stockCell: stockCell,
+        row: tr
+    };
+
+    // On ajoute l’option dans le menu déroulant
+    const select = document.getElementById("productSelect");
+    const opt = document.createElement("option");
+    opt.value = codeBarre;
+    opt.textContent = nomProduit;
+    select.appendChild(opt);
+
+    // On vide le formulaire
+    document.getElementById("new_code").value = "";
+    document.getElementById("new_name").value = "";
+    document.getElementById("new_stock").value = 0;
+    document.getElementById("new_min").value = 0;
+    document.getElementById("new_max").value = 0;
 }
