@@ -6,18 +6,16 @@
     <meta charset="UTF-8"> <!-- Encodage des caractères en UTF-8 (gère les accents, etc.) -->
     <title>Gestion des Stocks</title> <!-- Titre de l'onglet dans le navigateur -->
 
-    <!-- Lien vers ton fichier JavaScript qui contient toutes les fonctions (login, getData, stock, etc.) -->
-    <script type="text/javascript" src="getData.js"></script> <!-- Charge le script getData.js -->
+    <!-- Lien vers ton fichier JavaScript qui contient toutes les fonctions -->
+    <script type="text/javascript" src="getData.js"></script>
 
     <!-- Petites règles de style pour que ce soit plus lisible (facultatif mais pratique) -->
     <style>
-        /* Applique une police simple à tout le corps de la page */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
         }
 
-        /* Met une bordure et un peu d'espace autour des sections principales */
         #login_section,
         #inventory_section {
             border: 1px solid #ccc;
@@ -26,14 +24,12 @@
             border-radius: 8px;
         }
 
-        /* Style pour les tableaux (lignes, bordures, etc.) */
         table {
             border-collapse: collapse;
             width: 100%;
             margin-top: 10px;
         }
 
-        /* Bordures et padding pour les cellules de tableau */
         th,
         td {
             border: 1px solid #999;
@@ -41,18 +37,15 @@
             text-align: left;
         }
 
-        /* Met le fond du titre de colonne en gris clair */
         th {
             background-color: #f0f0f0;
         }
 
-        /* Style pour le message d'erreur de connexion */
         #login_error {
             color: red;
             display: none;
         }
 
-        /* Un peu d'air pour le formulaire d'ajout */
         #add_product_section {
             margin-top: 20px;
         }
@@ -64,11 +57,19 @@
         #add_product_section label {
             margin-right: 5px;
         }
-    </style> <!-- Fin du style interne -->
-</head> <!-- Fin de l'en-tête -->
 
-<body> <!-- Début du corps de la page -->
+        /* Petit style pour la légende des couleurs */
+        #legend span {
+            display: inline-block;
+            padding: 2px 8px;
+            margin-right: 8px;
+            border: 1px solid #999;
+            border-radius: 4px;
+        }
+    </style>
+</head>
 
+<body>
     <!-- =============================== -->
     <!--       SECTION DE CONNEXION     -->
     <!-- =============================== -->
@@ -106,7 +107,7 @@
         <button type="button" onclick="stock()">Ajouter au stock</button>
         <button type="button" onclick="retrait()">Retirer du stock</button>
 
-        <!-- NOUVEAU : sauvegarde locale et export -->
+        <!-- Sauvegarde locale et export -->
         <button type="button" onclick="sauvegarderDansNavigateur()">Sauvegarder (navigateur)</button>
         <button type="button" onclick="exporterCSV()">Exporter CSV</button>
 
@@ -119,7 +120,16 @@
 
         <br><br>
 
+        <!-- Tableau des produits -->
         <div id="product"></div>
+
+        <!-- Légende des couleurs -->
+        <div id="legend" style="margin-top:10px;">
+            <strong>Légende :</strong>
+            <span style="background-color:#bfffbf;">OK</span>
+            <span style="background-color:#ffe0b3;">Proche min/max</span>
+            <span style="background-color:#ffb3b3;">Sous min / au-dessus max</span>
+        </div>
 
         <!-- ======================== -->
         <!--    AJOUT D'UN PRODUIT   -->

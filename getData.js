@@ -49,6 +49,80 @@ function logout() {
 }
 
 // ===============================
+//   FONCTION UTILITAIRE
+//   Couleurs + popups min/max
+// ===============================
+function mettreAJourEtatLigne(codeBarre, info, ancienStock, afficherAlertes) {
+    if (!info || !info.row || !info.stockCell) return;
+
+    const tds = info.row.querySelectorAll("td");
+    // On suppose : 0 = code, 1 = nom, 2 = stock, 3 = stockMin, 4 = stockMax
+    const stock = parseInt(info.stockCell.textContent) || 0;
+    const stockMin = parseInt(tds[3]?.textContent) || 0;
+    const stockMax = parseInt(tds[4]?.textContent) || 0;
+
+    // Détermination de la couleur
+    let bgColor = "";
+    if (stock <= stockMin || stock >= stockMax) {
+        // Rouge : en dessous du min ou au dessus du max
+        bgColor = "#ffb3b3";
+    } else {
+        // On regarde si on se rapproche (20% des extrémités min/max)
+        let proche = false;
+        const range = stockMax - stockMin;
+        if (range > 0) {
+            const marge = Math.ceil(range * 0.2); // 20% de la plage
+            if ((stock - stockMin) <= marge || (stockMax - stock) <= marge) {
+                proche = true;
+            }
+        }
+        if (proche) {
+            // Orange
+            bgColor = "#ffe0b3";
+        } else {
+            // Vert : stock confortable
+            bgColor = "#bfffbf";
+        }
+    }
+
+    info.row.style.backgroundColor = bgColor;
+
+    if (!afficherAlertes) return;
+
+    let messages = [];
+
+    // Alerte pour le stock min
+    if (stockMin > 0) {
+        const atteintOuSousMin =
+            (ancienStock > stockMin && stock <= stockMin) || stock === stockMin;
+        if (atteintOuSousMin) {
+            messages.push(
+                "⚠ Stock MIN atteint ou en dessous pour " +
+                info.nom +
+                " (" + stock + " / min " + stockMin + ")"
+            );
+        }
+    }
+
+    // Alerte pour le stock max
+    if (stockMax > 0) {
+        const atteintOuAuDessusMax =
+            (ancienStock < stockMax && stock >= stockMax) || stock === stockMax;
+        if (atteintOuAuDessusMax) {
+            messages.push(
+                "⚠ Stock MAX atteint ou au-dessus pour " +
+                info.nom +
+                " (" + stock + " / max " + stockMax + ")"
+            );
+        }
+    }
+
+    if (messages.length > 0) {
+        alert(messages.join("\n"));
+    }
+}
+
+// ===============================
 //   FONCTION : getData()
 //   (lecture du CSV + remplissage tableau + menu déroulant)
 // ===============================
@@ -203,28 +277,26 @@ function getData() {
                 opt.value = codeBarre;
                 opt.textContent = nomProduit;
                 select.appendChild(opt);
+
+                // Mise à jour couleur initiale (sans popup)
+                const stockActuel = parseInt(stockCell.textContent) || 0;
+                mettreAJourEtatLigne(codeBarre, produitsParCode[codeBarre], stockActuel, false);
             }
 
             table.appendChild(tbody);
             productDiv.appendChild(table);
 
+            // Changement de produit dans le menu : on met juste à jour l'affichage du stock
             select.onchange = function () {
                 const code = this.value;
                 const info = produitsParCode[code];
-
-                Object.values(produitsParCode).forEach(p => {
-                    p.row.style.backgroundColor = "";
-                });
 
                 if (!code || !info) {
                     document.getElementById("affichage_stock").textContent = "stock : 0";
                     return;
                 }
 
-                info.row.style.backgroundColor = "#d0f0ff";
-
                 const stockActuel = parseInt(info.stockCell.textContent) || 0;
-
                 document.getElementById("affichage_stock").textContent =
                     "stock : " + stockActuel;
             };
@@ -248,10 +320,13 @@ function stock() {
         return;
     }
 
-    let stockActuel = parseInt(info.stockCell.textContent) || 0;
-    stockActuel++;
+    let ancienStock = parseInt(info.stockCell.textContent) || 0;
+    let stockActuel = ancienStock + 1;
+
     info.stockCell.textContent = stockActuel;
     document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
+
+    mettreAJourEtatLigne(code, info, ancienStock, true);
 }
 
 // ===============================
@@ -268,14 +343,16 @@ function retrait() {
         return;
     }
 
-    let stockActuel = parseInt(info.stockCell.textContent) || 0;
-    stockActuel--;
+    let ancienStock = parseInt(info.stockCell.textContent) || 0;
+    let stockActuel = ancienStock - 1;
     if (stockActuel < 0) {
         stockActuel = 0;
     }
 
     info.stockCell.textContent = stockActuel;
     document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
+
+    mettreAJourEtatLigne(code, info, ancienStock, true);
 }
 
 // ===============================
@@ -298,7 +375,7 @@ function definirStock() {
         return;
     }
 
-    let stockActuel = parseInt(info.stockCell.textContent) || 0;
+    let ancienStock = parseInt(info.stockCell.textContent) || 0;
     let nouveau_stock;
 
     if (saisie[0] === "+") {
@@ -307,14 +384,14 @@ function definirStock() {
             alert("Saisie invalide.");
             return;
         }
-        nouveau_stock = stockActuel + nombre;
+        nouveau_stock = ancienStock + nombre;
     } else if (saisie[0] === "-") {
         const nombre = parseInt(saisie.substring(1));
         if (isNaN(nombre)) {
             alert("Saisie invalide.");
             return;
         }
-        nouveau_stock = stockActuel - nombre;
+        nouveau_stock = ancienStock - nombre;
     } else {
         const nombre = parseInt(saisie);
         if (isNaN(nombre)) {
@@ -331,6 +408,8 @@ function definirStock() {
     info.stockCell.textContent = nouveau_stock;
     document.getElementById("affichage_stock").textContent = "stock : " + nouveau_stock;
     document.getElementById("input_stock").value = "";
+
+    mettreAJourEtatLigne(code, info, ancienStock, true);
 }
 
 // ===============================
@@ -450,6 +529,9 @@ function ajouterProduit() {
     opt.textContent = nomProduit;
     select.appendChild(opt);
 
+    // Couleur initiale (sans popup)
+    mettreAJourEtatLigne(codeBarre, produitsParCode[codeBarre], stock, false);
+
     document.getElementById("new_code").value = "";
     document.getElementById("new_name").value = "";
     document.getElementById("new_stock").value = 0;
@@ -476,7 +558,7 @@ function construireCSVDepuisTable() {
     Object.values(produitsParCode).forEach(p => {
         const tds = p.row.querySelectorAll("td");
         const rowValues = [];
-        for (let i = 0; i < tds.length - 1; i++) { // on ignore la dernière cellule (Actions)
+        for (let i = 0; i < tds.length - 1; i++) { // ignore "Actions"
             rowValues.push(tds[i].textContent);
         }
         lignes.push(rowValues.join(","));
