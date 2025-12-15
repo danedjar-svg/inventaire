@@ -602,3 +602,36 @@ function exporterCSV() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+// ===============================
+//   VALIDATION AVEC LA TOUCHE ENTRÉE
+// ===============================
+// Permet de valider sans cliquer sur les boutons.
+document.addEventListener("DOMContentLoaded", () => {
+    const onEnter = (el, action) => {
+        if (!el) return;
+        el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                action();
+            }
+        });
+    };
+
+    // Connexion (Entrée dans user/mot de passe)
+    onEnter(document.getElementById("login_username"), login);
+    onEnter(document.getElementById("login_password"), login);
+
+    // Mise à jour du stock (Entrée dans le champ stock)
+    onEnter(document.getElementById("input_stock"), definirStock);
+
+    // Ajout produit (Entrée sur un champ -> ajoute)
+    const addAction = () => {
+        const inv = document.getElementById("inventory_section");
+        if (inv && inv.style.display === "none") return; // pas connecté
+        ajouterProduit();
+    };
+    ["new_code", "new_name", "new_stock", "new_min", "new_max"].forEach((id) => {
+        onEnter(document.getElementById(id), addAction);
+    });
+});
