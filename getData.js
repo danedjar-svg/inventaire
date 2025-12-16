@@ -153,7 +153,7 @@ function getData() {
 
                 produitsParCode[codeBarre] = {
                     nom: nomProduit,
-                    stockCell: stockCell,
+                    stockCell: stockCell, // référence à la cellule du stock
                     row: tr
                 };
 
@@ -164,7 +164,7 @@ function getData() {
                 select.appendChild(option);
 
                 // Couleur initiale
-                mettreAJourEtatLigne(codeBarre, produitsParCode[codeBarre], null, false);
+                mettreAJourEtatLigne(codeBarre, produitsParCode[codeBarre], null, false); // pas d'animation au chargement
             }
 
             table.appendChild(tbody);
@@ -179,6 +179,7 @@ function getData() {
             }
         })
         .catch(error => {
-            console.error("Erreur lors du chargement du CSV :", error);
+            console.error("Erreur lors du chargement du CSV :", error); // Afficher l'erreur dans la console
+            alert("Erreur lors du chargement du CSV : " + error.message); // Alerter l'utilisateur
         });
 }
