@@ -1,37 +1,56 @@
-// ===============================
-//   CONFIG / ETAT GLOBAL
-// ===============================
-let produitsParCode = {}; // { code: { nom, row, stockCell } }
+// =========================================================
+//   ETAT GLOBAL
+// =========================================================
 
+// Dictionnaire produits indexé par code-barres
+// produitsParCode[code] = { nom, row, stockCell }
+let produitsParCode = {};
+
+// Petit helper pour getElementById
 function $(id) { return document.getElementById(id); }
 
-// ===============================
+// =========================================================
 //   LOGIN / LOGOUT
-// ===============================
+// =========================================================
+
 function login() {
   const u = ($("login_username").value || "").trim();
   const p = ($("login_password").value || "").trim();
 
+  // Login simple "en dur" (pour l'instant)
   if (u === "admin" && p === "1234") {
     $("login_error").textContent = "";
-    $("login_section").classList.add("hidden");
-    $("inventory_section").classList.remove("hidden");
+
+    // On masque le login et on affiche l'inventaire
+    $("login_section").style.display = "none";
+    $("inventory_section").style.display = "block";
+
+    // On charge les données CSV
     getData();
   } else {
-    $("login_error").textContent = "Identifiants incorrects.";
+    $("login_error").textContent = "Identifiants incorrects. Veuillez réessayer.";
   }
 }
 
 function logout() {
   $("login_username").value = "";
   $("login_password").value = "";
-  $("login_section").classList.remove("hidden");
-  $("inventory_section").classList.add("hidden");
+  $("login_error").textContent = "";
+
+  // On masque l'inventaire et on ré-affiche le login
+  $("inventory_section").style.display = "none";
+  $("login_section").style.display = "block";
+
+  // Reset affichage sélection
+  $("affichage_nom").textContent = "";
+  $("affichage_stock").textContent = "0";
+  $("input_stock").value = "";
 }
 
-// ===============================
-//   CHARGEMENT + CONSTRUCTION TABLE
-// ===============================
+// =========================================================
+//   CHARGEMENT CSV + CONSTRUCTION TABLE
+// =========================================================
+
 function getData() {
   fetch("Data.csv")
     .then(r => {
@@ -39,39 +58,53 @@ function getData() {
       return r.text();
     })
     .then(csvText => {
-      // Si sauvegarde navigateur existe, on l'utilise
+      // Si l'utilisateur avait sauvegardé dans le navigateur,
+      // on prend cette version à la place du fichier.
       try {
         const saved = localStorage.getItem("stockCSV");
         if (saved) csvText = saved;
       } catch (e) {}
 
+      // Reset
       produitsParCode = {};
 
+      // Découpe du CSV
       const lignes = csvText.trim().split("\n").filter(l => l.trim() !== "");
       if (lignes.length < 2) {
         console.warn("CSV vide ou invalide");
+        renderTableVide();
         return;
       }
 
+      // Headers (ligne 0)
       const headers = lignes[0].split(",").map(h => h.trim());
 
-      // UI
+      // Reset UI table
       const productDiv = $("product");
       productDiv.innerHTML = "";
 
+      // Création table
       const table = document.createElement("table");
+      table.border = "1";
+      table.style.borderCollapse = "collapse";
+      table.style.width = "100%";
 
       // thead
       const thead = document.createElement("thead");
       const trh = document.createElement("tr");
+
       headers.forEach(h => {
         const th = document.createElement("th");
         th.textContent = h;
+        th.style.padding = "6px";
         trh.appendChild(th);
       });
+
       const thA = document.createElement("th");
       thA.textContent = "Actions";
+      thA.style.padding = "6px";
       trh.appendChild(thA);
+
       thead.appendChild(trh);
       table.appendChild(thead);
 
@@ -79,60 +112,74 @@ function getData() {
       const tbody = document.createElement("tbody");
       tbody.id = "productBody";
 
-      // select
+      // Reset select (garder l'option placeholder)
       const select = $("productSelect");
-      select.innerHTML = "";
+      select.innerHTML = `<option value="">-- Sélectionnez un produit --</option>`;
 
-      // lignes
+      // Parcours des lignes data
       for (let i = 1; i < lignes.length; i++) {
         const vals = lignes[i].split(",").map(v => v.trim());
 
         const codeBarre = vals[0] || "";
         const nomProduit = vals[1] || "";
-        const stockStr = vals[2] || "0";
+
+        if (!codeBarre) continue;
 
         const tr = document.createElement("tr");
         tr.dataset.codeBarre = codeBarre;
 
+        // Création des cellules CSV (code, nom, stock, min, max)
         vals.forEach(v => {
           const td = document.createElement("td");
           td.textContent = v;
+          td.style.padding = "6px";
           tr.appendChild(td);
         });
 
-        // actions
+        // Création cellule actions
         const tdActions = document.createElement("td");
-        tdActions.className = "actions";
+        tdActions.style.padding = "6px";
 
+        // Bouton +
         const btnPlus = document.createElement("button");
+        btnPlus.type = "button";
         btnPlus.textContent = "+";
         btnPlus.onclick = () => {
-          $("productSelect").value = codeBarre;
+          select.value = codeBarre;
+          afficherProduit();
           stock();
         };
 
+        // Bouton -
         const btnMoins = document.createElement("button");
+        btnMoins.type = "button";
         btnMoins.textContent = "-";
         btnMoins.onclick = () => {
-          $("productSelect").value = codeBarre;
+          select.value = codeBarre;
+          afficherProduit();
           retrait();
         };
 
+        // Input rapide ligne
         const inputLigne = document.createElement("input");
         inputLigne.type = "text";
         inputLigne.size = 6;
         inputLigne.placeholder = "5, +5";
+        inputLigne.style.margin = "0 6px";
 
+        // OK ligne => applique definirStock()
         const btnOK = document.createElement("button");
+        btnOK.type = "button";
         btnOK.textContent = "OK";
         btnOK.onclick = () => {
-          $("productSelect").value = codeBarre;
+          select.value = codeBarre;
+          afficherProduit();
           $("input_stock").value = (inputLigne.value || "").trim();
           definirStock();
           inputLigne.value = "";
         };
 
-        // Entrée dans le input de la ligne => OK
+        // Enter sur input ligne => OK
         inputLigne.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -140,8 +187,11 @@ function getData() {
           }
         });
 
+        // Supprimer
         const btnSuppr = document.createElement("button");
+        btnSuppr.type = "button";
         btnSuppr.textContent = "Supprimer";
+        btnSuppr.style.marginLeft = "6px";
         btnSuppr.onclick = () => {
           if (!confirm("Supprimer ce produit ?")) return;
 
@@ -152,14 +202,15 @@ function getData() {
           if (opt) opt.remove();
 
           if (select.value === codeBarre) {
+            select.value = "";
             $("affichage_nom").textContent = "";
-            $("affichage_stock").textContent = "";
+            $("affichage_stock").textContent = "0";
           }
 
-          // re-filtre après suppression
           filtrerProduits();
         };
 
+        // Montage actions
         tdActions.appendChild(btnPlus);
         tdActions.appendChild(btnMoins);
         tdActions.appendChild(inputLigne);
@@ -168,22 +219,23 @@ function getData() {
 
         tr.appendChild(tdActions);
 
-        // Index attendus: 0 code, 1 nom, 2 stock, 3 min, 4 max
+        // Stock cell = colonne index 2
         const stockCell = tr.children[2];
 
+        // Enregistrement dans le dictionnaire
         produitsParCode[codeBarre] = {
           nom: nomProduit,
           row: tr,
           stockCell: stockCell
         };
 
-        // option select
+        // Ajout option dans le select
         const option = document.createElement("option");
         option.value = codeBarre;
         option.textContent = `${codeBarre} - ${nomProduit}`;
         select.appendChild(option);
 
-        // couleurs initiales
+        // Mise à jour état / couleur inline
         mettreAJourEtatLigne(codeBarre);
 
         tbody.appendChild(tr);
@@ -192,13 +244,17 @@ function getData() {
       table.appendChild(tbody);
       productDiv.appendChild(table);
 
-      // afficher le premier si dispo
-      if (select.options.length > 0) {
-        select.selectedIndex = 0;
+      // Afficher le premier produit si existant
+      if (select.options.length > 1) {
+        select.selectedIndex = 1;
         afficherProduit();
+      } else {
+        select.value = "";
+        $("affichage_nom").textContent = "";
+        $("affichage_stock").textContent = "0";
       }
 
-      // branche recherche instantanée
+      // Recherche instantanée
       const searchInput = $("searchInput");
       if (searchInput) {
         searchInput.oninput = filtrerProduits;
@@ -208,329 +264,37 @@ function getData() {
     .catch(err => console.error("Erreur chargement CSV :", err));
 }
 
-// ===============================
+function renderTableVide() {
+  const productDiv = $("product");
+  if (productDiv) productDiv.textContent = "Aucun produit dans le CSV.";
+}
+
+// =========================================================
 //   AFFICHAGE PRODUIT SELECTIONNE
-// ===============================
+// =========================================================
+
 function afficherProduit() {
   const code = $("productSelect").value;
   const p = produitsParCode[code];
-  if (!p) return;
+
+  if (!p) {
+    $("affichage_nom").textContent = "";
+    $("affichage_stock").textContent = "0";
+    return;
+  }
 
   $("affichage_nom").textContent = p.nom;
-  $("affichage_stock").textContent = p.stockCell.textContent;
+  $("affichage_stock").textContent = (p.stockCell.textContent || "0");
 }
 
-// ===============================
-//   MODIF STOCK (GLOBAL)
-// ===============================
-function definirStock() {
-  const code = $("productSelect").value;
-  const p = produitsParCode[code];
-  if (!p) return;
-
-  const raw = ($("input_stock").value || "").trim();
-  if (!raw) return;
-
-  const current = parseInt(p.stockCell.textContent, 10) || 0;
-
-  let next;
-  if (/^[+-]\d+$/.test(raw)) {
-    next = current + parseInt(raw, 10);
-  } else if (/^\d+$/.test(raw)) {
-    next = parseInt(raw, 10);
-  } else {
-    alert("Format invalide. Exemples: 5, +5, -3");
-    return;
-  }
-
-  p.stockCell.textContent = String(next);
-  $("affichage_stock").textContent = String(next);
-
-  mettreAJourEtatLigne(code);
-}
-
-// +1
-function stock() {
-  $("input_stock").value = "+1";
-  definirStock();
-  $("input_stock").value = "";
-}
-
-// -1
-function retrait() {
-  $("input_stock").value = "-1";
-  definirStock();
-  $("input_stock").value = "";
-}
-
-// ===============================
-//   COULEURS MIN/MAX
-// ===============================
-function mettreAJourEtatLigne(code) {
-  const p = produitsParCode[code];
-  if (!p) return;
-
-  const tr = p.row;
-  tr.classList.remove("row-ok", "row-warn", "row-bad");
-
-  const stock = parseInt(tr.children[2]?.textContent, 10) || 0;
-  const min = parseInt(tr.children[3]?.textContent, 10) || 0;
-  const max = parseInt(tr.children[4]?.textContent, 10) || 0;
-
-  // Si max/min sont 0, on met "ok"
-  if (max <= 0 && min <= 0) {
-    tr.classList.add("row-ok");
-    return;
-  }
-
-  // Rouge si critique
-  if (stock <= min || (max > 0 && stock >= max)) {
-    tr.classList.add("row-bad");
-    return;
-  }
-
-  // Orange si proche (20% de la zone)
-  const marginMin = min + Math.max(1, Math.round((max - min) * 0.2));
-  const marginMax = max - Math.max(1, Math.round((max - min) * 0.2));
-
-  if (stock <= marginMin || (max > 0 && stock >= marginMax)) {
-    tr.classList.add("row-warn");
-  } else {
-    tr.classList.add("row-ok");
-  }
-}
-
-// ===============================
-//   AJOUT PRODUIT
-// ===============================
-function ajouterProduit() {
-  const code = ($("new_code").value || "").trim();
-  const nom = ($("new_name").value || "").trim();
-
-  const stock = ($("new_stock").value || "0").trim();
-  const min = ($("new_min").value || "0").trim();
-  const max = ($("new_max").value || "0").trim();
-
-  if (!code || !nom) {
-    alert("Code-barres et nom sont obligatoires.");
-    return;
-  }
-  if (produitsParCode[code]) {
-    alert("Ce code-barres existe déjà.");
-    return;
-  }
-
-  const tbody = document.querySelector("#productBody");
-  if (!tbody) return;
-
-  const tr = document.createElement("tr");
-  tr.dataset.codeBarre = code;
-
-  // cellules : code, nom, stock, min, max
-  [code, nom, stock, min, max].forEach(v => {
-    const td = document.createElement("td");
-    td.textContent = v;
-    tr.appendChild(td);
-  });
-
-  // actions
-  const tdActions = document.createElement("td");
-  tdActions.className = "actions";
-
-  const btnPlus = document.createElement("button");
-  btnPlus.textContent = "+";
-  btnPlus.onclick = () => { $("productSelect").value = code; stockFn(); };
-
-  const btnMoins = document.createElement("button");
-  btnMoins.textContent = "-";
-  btnMoins.onclick = () => { $("productSelect").value = code; retraitFn(); };
-
-  const inputLigne = document.createElement("input");
-  inputLigne.type = "text";
-  inputLigne.size = 6;
-  inputLigne.placeholder = "5, +5";
-
-  const btnOK = document.createElement("button");
-  btnOK.textContent = "OK";
-  btnOK.onclick = () => {
-    $("productSelect").value = code;
-    $("input_stock").value = (inputLigne.value || "").trim();
-    definirStock();
-    inputLigne.value = "";
-  };
-
-  inputLigne.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      btnOK.click();
-    }
-  });
-
-  const btnSuppr = document.createElement("button");
-  btnSuppr.textContent = "Supprimer";
-  btnSuppr.onclick = () => {
-    if (!confirm("Supprimer ce produit ?")) return;
-    tr.remove();
-    delete produitsParCode[code];
-
-    const opt = $("productSelect").querySelector(`option[value="${code}"]`);
-    if (opt) opt.remove();
-
-    filtrerProduits();
-  };
-
-  tdActions.appendChild(btnPlus);
-  tdActions.appendChild(btnMoins);
-  tdActions.appendChild(inputLigne);
-  tdActions.appendChild(btnOK);
-  tdActions.appendChild(btnSuppr);
-
-  tr.appendChild(tdActions);
-
-  tbody.appendChild(tr);
-
-  produitsParCode[code] = {
-    nom: nom,
-    row: tr,
-    stockCell: tr.children[2]
-  };
-
-  // option select
-  const option = document.createElement("option");
-  option.value = code;
-  option.textContent = `${code} - ${nom}`;
-  $("productSelect").appendChild(option);
-
-  // reset inputs
-  $("new_code").value = "";
-  $("new_name").value = "";
-  $("new_stock").value = "";
-  $("new_min").value = "";
-  $("new_max").value = "";
-
-  // couleurs + filtre
-  mettreAJourEtatLigne(code);
-  filtrerProduits();
-
-  // sélection automatique
-  $("productSelect").value = code;
-  afficherProduit();
-
-  // petites fonctions locales pour éviter collision de nom
-  function stockFn() { $("input_stock").value = "+1"; definirStock(); $("input_stock").value = ""; }
-  function retraitFn() { $("input_stock").value = "-1"; definirStock(); $("input_stock").value = ""; }
-}
-
-// ===============================
-//   CSV: CONSTRUCTION + SAVE / EXPORT
-// ===============================
-function construireCSVDepuisTable() {
-  const tbody = document.querySelector("#productBody");
-  if (!tbody) return "";
-
-  // header fixe correspondant à ton format
-  const header = "codeBarre,nom,stock,stockMin,stockMax";
-
-  const lignes = [];
-  tbody.querySelectorAll("tr").forEach(tr => {
-    const tds = tr.querySelectorAll("td");
-    const code = (tds[0]?.textContent || "").trim();
-    const nom = (tds[1]?.textContent || "").trim();
-    const stock = (tds[2]?.textContent || "").trim();
-    const min = (tds[3]?.textContent || "").trim();
-    const max = (tds[4]?.textContent || "").trim();
-    lignes.push([code, nom, stock, min, max].join(","));
-  });
-
-  return [header, ...lignes].join("\n");
-}
-
-function sauvegarderDansNavigateur() {
-  const csv = construireCSVDepuisTable();
-  try {
-    localStorage.setItem("stockCSV", csv);
-    alert("Sauvegardé dans le navigateur ✅");
-  } catch (e) {
-    alert("Impossible de sauvegarder (localStorage bloqué).");
-  }
-}
-
-function resetSauvegardeNavigateur() {
-  try {
-    localStorage.removeItem("stockCSV");
-    alert("Sauvegarde navigateur supprimée ✅");
-    getData();
-  } catch (e) {
-    alert("Impossible de supprimer la sauvegarde.");
-  }
-}
-
-function exporterCSV() {
-  const csv = construireCSVDepuisTable();
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "Data_export.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// ===============================
-//   RECHERCHE INSTANTANÉE
-// ===============================
-function filtrerProduits() {
-  const input = $("searchInput");
-  const q = (input?.value || "").trim().toLowerCase();
-
-  document.querySelectorAll("#productBody tr").forEach(tr => {
-    const tds = tr.querySelectorAll("td");
-    const code = (tds[0]?.textContent || "").toLowerCase();
-    const nom = (tds[1]?.textContent || "").toLowerCase();
-
-    const match = q === "" || code.includes(q) || nom.includes(q);
-    tr.style.display = match ? "" : "none";
-  });
-}
-
-function effacerRecherche() {
-  const input = $("searchInput");
-  if (!input) return;
-  input.value = "";
-  filtrerProduits();
-  input.focus();
-}
-
-// ===============================
-//   ENTRÉE = VALIDER
-// ===============================
-document.addEventListener("DOMContentLoaded", () => {
-  const onEnter = (el, action) => {
-    if (!el) return;
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        action();
-      }
-    });
-  };
-
-  // Login
-  onEnter($("login_username"), login);
-  onEnter($("login_password"), login);
-
-  // Définir stock
-  onEnter($("input_stock"), definirStock);
-
-  // Ajout produit (Entrée sur un champ => ajoute)
-  const addAction = () => {
-    const inv = $("inventory_section");
-    if (inv && inv.classList.contains("hidden")) return;
-    ajouterProduit();
-  };
-
-  ["new_code", "new_name", "new_stock", "new_min", "new_max"].forEach(id => {
-    onEnter($(id), addAction);
-  });
-});
+// =========================================================
+//   ALERTES SEUILS (NEGATIF / MIN / MAX)
+// =========================================================
+//
+// Objectif : ne pas spammer.
+// On alerte seulement au moment où on "franchit" un seuil.
+//
+// Exemple :
+// - si tu es déjà en dessous du min et que tu diminues encore,
+//   on ne ré-affiche pas
+// - si tu es au-dessus du min et que tu diminues en dessous, 
