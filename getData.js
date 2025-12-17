@@ -1,434 +1,555 @@
 // ===============================
-//   CONFIG
+//   VARIABLES GLOBALES
 // ===============================
-const STORAGE_KEY = "inventaireProduits_v2";
+
+let produitsParCode = {}; // { "code": { nom, stockCell, row } }
+const STORAGE_KEY = "inventaireProduits_v1";
+
+// marge pour l'orange (approche des seuils)
 const APPROCHE_MARGE = 5;
-
-// ===============================
-//   STATE
-// ===============================
-let produitsParCode = {}; // code -> { nom, row, stockCell }
-let selectedCode = "";
-
-// ===============================
-//   HELPERS
-// ===============================
-function toNum(v, fallback = 0) {
-  const n = parseFloat(String(v).replace(",", "."));
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function clearSelectionHighlight() {
-  Object.values(produitsParCode).forEach(p => p.row.classList.remove("status-selected"));
-}
-
-function setSelected(code) {
-  selectedCode = code || "";
-  clearSelectionHighlight();
-
-  const info = produitsParCode[selectedCode];
-  if (!selectedCode || !info) {
-    document.getElementById("affichage_stock").textContent = "stock : 0";
-    return;
-  }
-
-  info.row.classList.add("status-selected");
-  const stockActuel = toNum(info.stockCell.textContent, 0);
-  document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
-}
 
 // ===============================
 //   COULEURS / STATUT DE LIGNE
 // ===============================
+
 function updateRowStatus(tr) {
-  if (!tr) return;
-  const tds = tr.querySelectorAll("td");
-  // 0=code,1=nom,2=stock,3=min,4=max
-  if (tds.length < 5) return;
+    if (!tr) return;
 
-  const stock = toNum(tds[2].textContent, 0);
+    const tds = tr.querySelectorAll("td");
+    // 0=code, 1=nom, 2=stock, 3=stockMin, 4=stockMax
+    if (!tds || tds.length < 5) return;
 
-  const minTxt = (tds[3].textContent || "").trim();
-  const maxTxt = (tds[4].textContent || "").trim();
-  const stockMin = minTxt === "" ? NaN : toNum(minTxt, NaN);
-  const stockMax = maxTxt === "" ? NaN : toNum(maxTxt, NaN);
+    const stock = parseFloat((tds[2]?.textContent || "0").replace(",", ".")) || 0;
 
-  const hasMin = Number.isFinite(stockMin);
-  const hasMax = Number.isFinite(stockMax);
+    const minTxt = (tds[3]?.textContent || "").trim();
+    const maxTxt = (tds[4]?.textContent || "").trim();
 
-  tr.classList.remove("status-good", "status-warning", "status-danger");
+    // Si min/max manquent, on ne déclenche pas d'alertes basées dessus
+    const stockMin = minTxt === "" ? NaN : parseFloat(minTxt.replace(",", "."));
+    const stockMax = maxTxt === "" ? NaN : parseFloat(maxTxt.replace(",", "."));
 
-  const isDanger =
-    stock < 0 ||
-    (hasMin && stock < stockMin) ||
-    (hasMax && stock > stockMax);
+    const hasMin = Number.isFinite(stockMin);
+    const hasMax = Number.isFinite(stockMax);
 
-  const isWarning = !isDanger && (
-    (hasMin && stock <= stockMin + APPROCHE_MARGE) ||
-    (hasMax && stock >= stockMax - APPROCHE_MARGE)
-  );
+    tr.classList.remove("status-good", "status-warning", "status-danger");
 
-  tr.classList.add(isDanger ? "status-danger" : (isWarning ? "status-warning" : "status-good"));
+    // ROUGE = critique : négatif OU sous min OU au-dessus max
+    const isDanger =
+        stock < 0 ||
+        (hasMin && stock < stockMin) ||
+        (hasMax && stock > stockMax);
+
+    // ORANGE = proche d'un seuil (sans être déjà rouge)
+    const isWarning = !isDanger && (
+        (hasMin && stock <= stockMin + APPROCHE_MARGE) ||
+        (hasMax && stock >= stockMax - APPROCHE_MARGE)
+    );
+
+    tr.classList.add(isDanger ? "status-danger" : (isWarning ? "status-warning" : "status-good"));
 }
 
 function updateAllRowsStatus() {
-  Object.values(produitsParCode).forEach(p => updateRowStatus(p.row));
+    Object.values(produitsParCode).forEach(p => updateRowStatus(p.row));
 }
 
 // ===============================
-//   LOCAL STORAGE
+//   FONCTIONS LOCALSTORAGE
 // ===============================
+
 function loadSavedState() {
-  try {
-    const txt = localStorage.getItem(STORAGE_KEY);
-    return txt ? JSON.parse(txt) : {};
-  } catch {
-    return {};
-  }
+    try {
+        const txt = localStorage.getItem(STORAGE_KEY);
+        if (!txt) return {};
+        return JSON.parse(txt);
+    } catch (e) {
+        console.error("Erreur lecture localStorage :", e);
+        return {};
+    }
 }
 
 function saveCurrentState() {
-  const state = {};
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const tds = info.row.querySelectorAll("td");
-    state[code] = {
-      code: tds[0].textContent,
-      nom: tds[1].textContent,
-      stock: toNum(tds[2].textContent, 0),
-      stockMin: tds[3].textContent,
-      stockMax: tds[4].textContent,
-      deleted: false
-    };
-  });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+    try {
+        const saved = loadSavedState();
+        const newState = {};
 
-// ===============================
-//   LOGIN
-// ===============================
-function login() {
-  const u = document.getElementById("username").value.trim();
-  const p = document.getElementById("password").value.trim();
+        Object.keys(produitsParCode).forEach(code => {
+            const info = produitsParCode[code];
+            const row = info.row;
+            const tds = row.querySelectorAll("td");
 
-  if (u === "admin" && p === "1234") {
-    document.getElementById("login_section").style.display = "none";
-    document.getElementById("inventory_section").style.display = "block";
-    document.getElementById("login_error").style.display = "none";
-    getData();
-  } else {
-    document.getElementById("login_error").style.display = "block";
-  }
-}
-
-function logout() {
-  document.getElementById("login_section").style.display = "block";
-  document.getElementById("inventory_section").style.display = "none";
-  document.getElementById("username").value = "";
-  document.getElementById("password").value = "";
-  document.getElementById("login_error").style.display = "none";
-
-  document.getElementById("product").innerHTML = "";
-  const select = document.getElementById("productSelect");
-  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  produitsParCode = {};
-  selectedCode = "";
-  document.getElementById("affichage_stock").textContent = "stock : 0";
-}
-
-// ===============================
-//   TABLE BUILD
-// ===============================
-function ajouterCelluleActions(tr, codeBarre) {
-  const tdActions = document.createElement("td");
-
-  const wrap = document.createElement("div");
-  wrap.className = "row-actions";
-
-  const btnPlus = document.createElement("button");
-  btnPlus.textContent = "+";
-  btnPlus.type = "button";
-  btnPlus.onclick = () => {
-    document.getElementById("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    stock();
-  };
-
-  const btnMoins = document.createElement("button");
-  btnMoins.textContent = "-";
-  btnMoins.type = "button";
-  btnMoins.onclick = () => {
-    document.getElementById("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    retrait();
-  };
-
-  const inputLigne = document.createElement("input");
-  inputLigne.type = "text";
-  inputLigne.placeholder = "5, +5, -3";
-
-  const btnOk = document.createElement("button");
-  btnOk.textContent = "OK";
-  btnOk.type = "button";
-  btnOk.onclick = () => {
-    document.getElementById("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    document.getElementById("input_stock").value = inputLigne.value.trim();
-    definirStock();
-    inputLigne.value = "";
-  };
-
-  wrap.appendChild(btnPlus);
-  wrap.appendChild(btnMoins);
-  wrap.appendChild(inputLigne);
-  wrap.appendChild(btnOk);
-
-  tdActions.appendChild(wrap);
-  tr.appendChild(tdActions);
-}
-
-function rebuildDropdown() {
-  const select = document.getElementById("productSelect");
-  const current = select.value;
-
-  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = info.nom || code;
-    select.appendChild(opt);
-  });
-
-  select.value = current;
-}
-
-// ===============================
-//   LOAD CSV
-// ===============================
-function getData() {
-  fetch("Data.csv")
-    .then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.text();
-    })
-    .then(csv => {
-      produitsParCode = {};
-      selectedCode = "";
-
-      const productDiv = document.getElementById("product");
-      productDiv.innerHTML = "";
-
-      const lignes = csv.trim().split("\n").filter(l => l.trim() !== "");
-      if (lignes.length < 2) {
-        productDiv.textContent = "CSV vide ou invalide.";
-        return;
-      }
-
-      const entetes = lignes[0].split(",");
-
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
-
-      const trHead = document.createElement("tr");
-      entetes.forEach(h => {
-        const th = document.createElement("th");
-        th.textContent = h;
-        trHead.appendChild(th);
-      });
-      const thActions = document.createElement("th");
-      thActions.textContent = "Actions";
-      trHead.appendChild(thActions);
-      thead.appendChild(trHead);
-      table.appendChild(thead);
-
-      for (let i = 1; i < lignes.length; i++) {
-        const vals = lignes[i].split(",");
-        if (vals.length < 5) continue;
-
-        const code = (vals[0] || "").trim();
-        const nom = (vals[1] || "").trim();
-
-        const tr = document.createElement("tr");
-        tr.dataset.codeBarre = code;
-
-        vals.slice(0, 5).forEach((v, idx) => {
-          const td = document.createElement("td");
-          td.textContent = (v ?? "").trim();
-          if (idx === 2) td.classList.add("stockCell");
-          tr.appendChild(td);
+            newState[code] = {
+                code: tds[0] ? tds[0].textContent : code,
+                nom: tds[1] ? tds[1].textContent : "",
+                stock: tds[2] ? parseFloat(tds[2].textContent) || 0 : 0,
+                stockMin: tds[3] ? tds[3].textContent : "0",
+                stockMax: tds[4] ? tds[4].textContent : "0",
+                deleted: false
+            };
         });
 
-        ajouterCelluleActions(tr, code);
-
-        tr.addEventListener("click", (e) => {
-          // évite de sélectionner en cliquant sur un bouton
-          if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT")) return;
-          document.getElementById("productSelect").value = code;
-          setSelected(code);
+        Object.keys(saved).forEach(code => {
+            if (saved[code].deleted && !newState[code]) {
+                newState[code] = { ...saved[code], deleted: true };
+            }
         });
 
-        tbody.appendChild(tr);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    } catch (e) {
+        console.error("Erreur écriture localStorage :", e);
+    }
+}
 
-        produitsParCode[code] = {
-          nom,
-          row: tr,
-          stockCell: tr.querySelector(".stockCell")
-        };
-
-        updateRowStatus(tr);
-      }
-
-      table.appendChild(tbody);
-      productDiv.appendChild(table);
-
-      // Applique sauvegarde locale (si existe)
-      const saved = loadSavedState();
-      Object.keys(saved).forEach(code => {
+function applySavedState(saved, select, tbody) {
+    Object.keys(saved).forEach(code => {
         const data = saved[code];
-        if (!data || data.deleted) return;
-        const info = produitsParCode[code];
-        if (!info) return;
-        const tds = info.row.querySelectorAll("td");
-        // 0 code,1 nom,2 stock,3 min,4 max
-        tds[1].textContent = data.nom;
-        tds[2].textContent = data.stock;
-        tds[3].textContent = data.stockMin;
-        tds[4].textContent = data.stockMax;
-        info.nom = data.nom;
-        updateRowStatus(info.row);
-      });
 
-      rebuildDropdown();
+        if (data.deleted) {
+            if (produitsParCode[code]) {
+                const row = produitsParCode[code].row;
+                row.remove();
+                delete produitsParCode[code];
 
-      const select = document.getElementById("productSelect");
-      select.onchange = function () {
-        setSelected(this.value);
-      };
+                const options = Array.from(select.options);
+                options.forEach(opt => {
+                    if (opt.value === code) opt.remove();
+                });
+            }
+            return;
+        }
 
-      setSelected(""); // reset affichage
-      updateAllRowsStatus();
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Impossible de charger Data.csv (mets Data.csv au même endroit que index.html).");
+        if (produitsParCode[code]) {
+            const info = produitsParCode[code];
+            const row = info.row;
+            const tds = row.querySelectorAll("td");
+
+            if (tds[1] && data.nom !== undefined) tds[1].textContent = data.nom;
+            if (tds[2] && data.stock !== undefined) tds[2].textContent = data.stock;
+            if (tds[3] && data.stockMin !== undefined) tds[3].textContent = data.stockMin;
+            if (tds[4] && data.stockMax !== undefined) tds[4].textContent = data.stockMax;
+
+            updateRowStatus(row);
+        } else {
+            const tr = document.createElement("tr");
+            tr.dataset.codeBarre = code;
+
+            const valeurs = [
+                data.code || code,
+                data.nom || "",
+                data.stock !== undefined ? data.stock : 0,
+                data.stockMin !== undefined ? data.stockMin : "0",
+                data.stockMax !== undefined ? data.stockMax : "0"
+            ];
+
+            valeurs.forEach((valeur, index) => {
+                const td = document.createElement("td");
+                td.textContent = valeur;
+                if (index === 2) td.classList.add("stockCell");
+                tr.appendChild(td);
+            });
+
+            ajouterCelluleActions(tr, code);
+            tbody.appendChild(tr);
+
+            const stockCell = tr.querySelector(".stockCell");
+            produitsParCode[code] = {
+                nom: data.nom || "",
+                stockCell: stockCell,
+                row: tr
+            };
+
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = data.nom || code;
+            select.appendChild(opt);
+
+            updateRowStatus(tr);
+        }
     });
 }
 
 // ===============================
-//   ACTIONS STOCK (global)
+//   LOGIN / LOGOUT
 // ===============================
+
+function login() {
+    const username = document.getElementById("login_username").value;
+    const password = document.getElementById("login_password").value;
+
+    if (username === "admin" && password === "1234") {
+        document.getElementById("login_section").style.display = "none";
+        document.getElementById("inventory_section").style.display = "block";
+        document.getElementById("login_error").style.display = "none";
+        getData();
+    } else {
+        document.getElementById("login_error").style.display = "block";
+    }
+}
+
+function logout() {
+    document.getElementById("login_section").style.display = "block";
+    document.getElementById("inventory_section").style.display = "none";
+
+    document.getElementById("login_username").value = "";
+    document.getElementById("login_password").value = "";
+    document.getElementById("login_error").style.display = "none";
+
+    document.getElementById("affichage_stock").textContent = "stock : 0";
+
+    const select = document.getElementById("productSelect");
+    if (select) {
+        select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+    }
+
+    document.getElementById("product").innerHTML = "";
+    produitsParCode = {};
+}
+
+// ===============================
+//   getData() : lecture CSV
+// ===============================
+
+function clearSelectionHighlight() {
+    Object.values(produitsParCode).forEach(p => p.row.classList.remove("status-selected"));
+}
+
+function getData() {
+    fetch("Data.csv")
+        .then(response => {
+            if (!response.ok) throw new Error("Erreur HTTP : " + response.status);
+            return response.text();
+        })
+        .then(texteCSV => {
+            produitsParCode = {};
+
+            const select = document.getElementById("productSelect");
+            select.innerHTML = "";
+
+            const optDefault = document.createElement("option");
+            optDefault.value = "";
+            optDefault.textContent = "-- Sélectionnez un produit --";
+            select.appendChild(optDefault);
+
+            const lignes = texteCSV.trim().split("\n");
+            const entetes = lignes[0].split(",");
+
+            const productDiv = document.getElementById("product");
+            productDiv.innerHTML = "";
+
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const tbody = document.createElement("tbody");
+
+            const trHead = document.createElement("tr");
+            entetes.forEach(titre => {
+                const th = document.createElement("th");
+                th.textContent = titre;
+                trHead.appendChild(th);
+            });
+
+            const thActions = document.createElement("th");
+            thActions.textContent = "Actions";
+            trHead.appendChild(thActions);
+
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            for (let i = 1; i < lignes.length; i++) {
+                const ligneBrute = lignes[i].trim();
+                if (ligneBrute === "") continue;
+
+                const valeurs = ligneBrute.split(",");
+                const codeBarre = valeurs[0];
+                const nomProduit = valeurs[1];
+
+                const tr = document.createElement("tr");
+                tr.dataset.codeBarre = codeBarre;
+
+                valeurs.forEach((valeur, index) => {
+                    const td = document.createElement("td");
+                    td.textContent = valeur;
+                    if (index === 2) td.classList.add("stockCell");
+                    tr.appendChild(td);
+                });
+
+                ajouterCelluleActions(tr, codeBarre);
+
+                tbody.appendChild(tr);
+
+                const stockCell = tr.querySelector(".stockCell");
+                produitsParCode[codeBarre] = {
+                    nom: nomProduit,
+                    stockCell: stockCell,
+                    row: tr
+                };
+
+                const opt = document.createElement("option");
+                opt.value = codeBarre;
+                opt.textContent = nomProduit;
+                select.appendChild(opt);
+
+                updateRowStatus(tr);
+            }
+
+            const saved = loadSavedState();
+            applySavedState(saved, select, tbody);
+
+            table.appendChild(tbody);
+            productDiv.appendChild(table);
+
+            // Selection dans le select => sélection + affichage stock
+            select.onchange = function () {
+                const code = this.value;
+                const info = produitsParCode[code];
+
+                clearSelectionHighlight();
+
+                if (!code || !info) {
+                    document.getElementById("affichage_stock").textContent = "stock : 0";
+                    return;
+                }
+
+                info.row.classList.add("status-selected");
+
+                const stockActuel = parseFloat(info.stockCell.textContent) || 0;
+                document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
+            };
+
+            // applique un dernier passage (sécurité)
+            updateAllRowsStatus();
+        })
+        .catch(error => {
+            console.error("Erreur lors du chargement du CSV :", error);
+            alert("Impossible de charger Data.csv (vérifie que le fichier est au même endroit).");
+        });
+}
+
+// ===============================
+//   Cellule Actions par ligne
+// ===============================
+
+function ajouterCelluleActions(tr, codeBarre) {
+    const tdActions = document.createElement("td");
+
+    const btnPlus = document.createElement("button");
+    btnPlus.textContent = "+";
+    btnPlus.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        document.getElementById("productSelect").dispatchEvent(new Event("change"));
+        stock();
+    };
+
+    const btnMoins = document.createElement("button");
+    btnMoins.textContent = "-";
+    btnMoins.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        document.getElementById("productSelect").dispatchEvent(new Event("change"));
+        retrait();
+    };
+
+    const inputLigne = document.createElement("input");
+    inputLigne.type = "text";
+    inputLigne.size = 5;
+    inputLigne.placeholder = "5, +5, -3";
+
+    const btnOk = document.createElement("button");
+    btnOk.textContent = "OK";
+    btnOk.onclick = function () {
+        document.getElementById("productSelect").value = codeBarre;
+        document.getElementById("productSelect").dispatchEvent(new Event("change"));
+        document.getElementById("input_stock").value = inputLigne.value.trim();
+        definirStock();
+        inputLigne.value = "";
+    };
+
+    const btnDel = document.createElement("button");
+    btnDel.textContent = "X";
+    btnDel.onclick = function () {
+        if (!confirm("Supprimer ce produit ?")) return;
+
+        const select = document.getElementById("productSelect");
+
+        if (select.value === codeBarre) {
+            select.value = "";
+            clearSelectionHighlight();
+            document.getElementById("affichage_stock").textContent = "stock : 0";
+        }
+
+        tr.remove();
+        delete produitsParCode[codeBarre];
+
+        const options = Array.from(select.options);
+        options.forEach(opt => {
+            if (opt.value === codeBarre) opt.remove();
+        });
+
+        const saved = loadSavedState();
+        if (!saved[codeBarre]) saved[codeBarre] = { code: codeBarre, deleted: true };
+        saved[codeBarre].deleted = true;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    };
+
+    tdActions.appendChild(btnPlus);
+    tdActions.appendChild(btnMoins);
+    tdActions.appendChild(inputLigne);
+    tdActions.appendChild(btnOk);
+    tdActions.appendChild(btnDel);
+
+    tr.appendChild(tdActions);
+}
+
+// ===============================
+//   Ajout produit
+// ===============================
+
+function addProduct() {
+    const codeInput = document.getElementById("new_code");
+    const nomInput = document.getElementById("new_nom");
+    const stockInput = document.getElementById("new_stock");
+    const stockMinInput = document.getElementById("new_stock_min");
+    const stockMaxInput = document.getElementById("new_stock_max");
+
+    const codeBarre = codeInput.value.trim();
+    const nomProduit = nomInput.value.trim();
+    const stockInitial = parseFloat(stockInput.value) || 0;
+    const stockMin = stockMinInput.value.trim() === "" ? "0" : stockMinInput.value.trim();
+    const stockMax = stockMaxInput.value.trim() === "" ? "0" : stockMaxInput.value.trim();
+
+    if (!codeBarre || !nomProduit) {
+        alert("Merci de remplir au moins le code-barres et le nom du produit.");
+        return;
+    }
+
+    if (produitsParCode[codeBarre]) {
+        alert("Un produit avec ce code-barres existe déjà.");
+        return;
+    }
+
+    const table = document.querySelector("#product table");
+    if (!table) {
+        alert("Tableau non trouvé.");
+        return;
+    }
+    const tbody = table.querySelector("tbody");
+    if (!tbody) {
+        alert("Corps du tableau non trouvé.");
+        return;
+    }
+
+    const tr = document.createElement("tr");
+    tr.dataset.codeBarre = codeBarre;
+
+    const valeurs = [codeBarre, nomProduit, stockInitial, stockMin, stockMax];
+
+    valeurs.forEach((valeur, index) => {
+        const td = document.createElement("td");
+        td.textContent = valeur;
+        if (index === 2) td.classList.add("stockCell");
+        tr.appendChild(td);
+    });
+
+    ajouterCelluleActions(tr, codeBarre);
+    tbody.appendChild(tr);
+
+    const stockCell = tr.querySelector(".stockCell");
+    produitsParCode[codeBarre] = { nom: nomProduit, stockCell: stockCell, row: tr };
+
+    const select = document.getElementById("productSelect");
+    const opt = document.createElement("option");
+    opt.value = codeBarre;
+    opt.textContent = nomProduit;
+    select.appendChild(opt);
+
+    updateRowStatus(tr);
+    saveCurrentState();
+
+    codeInput.value = "";
+    nomInput.value = "";
+    stockInput.value = "0";
+    stockMinInput.value = "0";
+    stockMaxInput.value = "0";
+}
+
+// ===============================
+//   Stock / Retrait / Définir
+// ===============================
+
 function stock() {
-  const code = document.getElementById("productSelect").value;
-  const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
+    const select = document.getElementById("productSelect");
+    const code = select.value;
+    const info = produitsParCode[code];
 
-  const s = toNum(info.stockCell.textContent, 0) + 1;
-  info.stockCell.textContent = s;
+    if (!code || !info) {
+        alert("Choisis d'abord un produit dans le menu déroulant.");
+        return;
+    }
 
-  document.getElementById("affichage_stock").textContent = "stock : " + s;
+    let stockActuel = parseFloat(info.stockCell.textContent) || 0;
+    stockActuel++;
+    info.stockCell.textContent = stockActuel;
 
-  updateRowStatus(info.row);
-  saveCurrentState();
+    document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
+
+    updateRowStatus(info.row);
+    saveCurrentState();
 }
 
 function retrait() {
-  const code = document.getElementById("productSelect").value;
-  const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
+    const select = document.getElementById("productSelect");
+    const code = select.value;
+    const info = produitsParCode[code];
 
-  // autorise le négatif => ROUGE
-  const s = toNum(info.stockCell.textContent, 0) - 1;
-  info.stockCell.textContent = s;
+    if (!code || !info) {
+        alert("Choisis d'abord un produit dans le menu déroulant.");
+        return;
+    }
 
-  document.getElementById("affichage_stock").textContent = "stock : " + s;
+    let stockActuel = parseFloat(info.stockCell.textContent) || 0;
+    stockActuel--; // on autorise le négatif (pour le ROUGE)
+    info.stockCell.textContent = stockActuel;
 
-  updateRowStatus(info.row);
-  saveCurrentState();
+    document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
+
+    updateRowStatus(info.row);
+    saveCurrentState();
 }
 
 function definirStock() {
-  const code = document.getElementById("productSelect").value;
-  const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
+    const select = document.getElementById("productSelect");
+    const code = select.value;
+    const info = produitsParCode[code];
 
-  const saisie = document.getElementById("input_stock").value.trim();
-  if (!saisie) return alert("Entre un nombre (ex: 5, +5, -5).");
+    if (!code || !info) {
+        alert("Choisis d'abord un produit dans le menu déroulant.");
+        return;
+    }
 
-  const actuel = toNum(info.stockCell.textContent, 0);
-  let nouveau;
+    const saisie = document.getElementById("input_stock").value.trim();
+    if (saisie === "") {
+        alert("Veuillez entrer un nombre (ex : 5, +5, -5).");
+        return;
+    }
 
-  if (saisie.startsWith("+")) {
-    nouveau = actuel + toNum(saisie.slice(1), NaN);
-  } else if (saisie.startsWith("-")) {
-    nouveau = actuel - toNum(saisie.slice(1), NaN);
-  } else {
-    nouveau = toNum(saisie, NaN);
-  }
+    let stockActuel = parseFloat(info.stockCell.textContent) || 0;
+    let nouveau_stock;
 
-  if (!Number.isFinite(nouveau)) return alert("Saisie invalide.");
+    if (saisie[0] === "+") {
+        const nombre = parseFloat(saisie.substring(1).replace(",", "."));
+        if (!Number.isFinite(nombre)) return alert("Saisie invalide.");
+        nouveau_stock = stockActuel + nombre;
+    } else if (saisie[0] === "-") {
+        const nombre = parseFloat(saisie.substring(1).replace(",", "."));
+        if (!Number.isFinite(nombre)) return alert("Saisie invalide.");
+        nouveau_stock = stockActuel - nombre;
+    } else {
+        const nombre = parseFloat(saisie.replace(",", "."));
+        if (!Number.isFinite(nombre)) return alert("Saisie invalide.");
+        nouveau_stock = nombre;
+    }
 
-  info.stockCell.textContent = nouveau;
-  document.getElementById("affichage_stock").textContent = "stock : " + nouveau;
-  document.getElementById("input_stock").value = "";
+    info.stockCell.textContent = nouveau_stock;
+    document.getElementById("affichage_stock").textContent = "stock : " + nouveau_stock;
+    document.getElementById("input_stock").value = "";
 
-  updateRowStatus(info.row);
-  saveCurrentState();
-}
-
-// ===============================
-//   AJOUT PRODUIT
-// ===============================
-function addProduct() {
-  const code = document.getElementById("new_code").value.trim();
-  const nom = document.getElementById("new_nom").value.trim();
-  const stock = toNum(document.getElementById("new_stock").value, 0);
-  const min = toNum(document.getElementById("new_stock_min").value, 0);
-  const max = toNum(document.getElementById("new_stock_max").value, 0);
-
-  if (!code || !nom) return alert("Code barre et nom obligatoires.");
-  if (produitsParCode[code]) return alert("Ce code existe déjà.");
-
-  const table = document.querySelector("#product table");
-  if (!table) return alert("Tableau non chargé (Data.csv introuvable ?)");
-
-  const tbody = table.querySelector("tbody");
-
-  const tr = document.createElement("tr");
-  tr.dataset.codeBarre = code;
-
-  const vals = [code, nom, stock, min, max];
-  vals.forEach((v, idx) => {
-    const td = document.createElement("td");
-    td.textContent = v;
-    if (idx === 2) td.classList.add("stockCell");
-    tr.appendChild(td);
-  });
-
-  ajouterCelluleActions(tr, code);
-
-  tr.addEventListener("click", (e) => {
-    if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT")) return;
-    document.getElementById("productSelect").value = code;
-    setSelected(code);
-  });
-
-  tbody.appendChild(tr);
-
-  produitsParCode[code] = {
-    nom,
-    row: tr,
-    stockCell: tr.querySelector(".stockCell")
-  };
-
-  updateRowStatus(tr);
-  rebuildDropdown();
-  saveCurrentState();
-
-  document.getElementById("new_code").value = "";
-  document.getElementById("new_nom").value = "";
-  document.getElementById("new_stock").value = "0";
-  document.getElementById("new_stock_min").value = "0";
-  document.getElementById("new_stock_max").value = "0";
+    updateRowStatus(info.row);
+    saveCurrentState();
 }
