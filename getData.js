@@ -3,16 +3,24 @@
 // ===============================
 
 // Objet qui va contenir les infos des produits, rangés par code-barres
+// Exemple : { "123456789": { nom: "Stylo", stockCell: <td>, row: <tr> } }
 let produitsParCode = {};
 
-// Clé pour le localStorage
+// Clé utilisée pour stocker les données dans localStorage
 const STORAGE_KEY = "inventaireProduits_v1";
 
 // ===============================
 //   FONCTIONS LOCALSTORAGE
 // ===============================
 
-// Charge l'état sauvegardé depuis localStorage
+/**
+ * Lit l'état sauvegardé dans le navigateur (localStorage).
+ * Retourne un objet de la forme :
+ * {
+ *   "123456": { code, nom, stock, stockMin, stockMax, deleted: false },
+ *   "789012": { ... }
+ * }
+ */
 function loadSavedState() {
     try {
         const txt = localStorage.getItem(STORAGE_KEY);
@@ -24,13 +32,16 @@ function loadSavedState() {
     }
 }
 
-// Sauvegarde l'état actuel (produitsParCode + infos) dans localStorage
+/**
+ * Sauvegarde l'état actuel (toutes les lignes du tableau) dans localStorage.
+ * On prend le contenu actuel de produitsParCode et du DOM.
+ */
 function saveCurrentState() {
     try {
         const saved = loadSavedState();
         const newState = {};
 
-        // On remet à jour tous les produits actuellement présents dans le tableau
+        // On parcourt tous les produits actuellement présents
         Object.keys(produitsParCode).forEach(code => {
             const info = produitsParCode[code];
             const row = info.row;
@@ -47,7 +58,7 @@ function saveCurrentState() {
             };
         });
 
-        // On conserve les produits marqués supprimés (deleted:true)
+        // On garde aussi les produits supprimés (deleted:true) qui existaient déjà
         Object.keys(saved).forEach(code => {
             if (saved[code].deleted && !newState[code]) {
                 newState[code] = { ...saved[code], deleted: true };
@@ -60,19 +71,22 @@ function saveCurrentState() {
     }
 }
 
-// Applique l'état sauvegardé après le chargement du CSV
+/**
+ * Applique l'état sauvegardé sur le tableau et le menu déroulant
+ * après le chargement du CSV.
+ */
 function applySavedState(saved, select, tbody) {
     Object.keys(saved).forEach(code => {
         const data = saved[code];
 
-        // Produit supprimé -> on le retire du tableau / menu si présent
+        // Si le produit est marqué supprimé
         if (data.deleted) {
             if (produitsParCode[code]) {
                 const row = produitsParCode[code].row;
                 row.remove();
                 delete produitsParCode[code];
 
-                // enlever aussi du menu déroulant
+                // Enlever aussi du menu déroulant
                 const options = Array.from(select.options);
                 options.forEach(opt => {
                     if (opt.value === code) opt.remove();
@@ -81,7 +95,7 @@ function applySavedState(saved, select, tbody) {
             return;
         }
 
-        // Produit déjà présent (depuis le CSV) -> on met à jour ses valeurs
+        // Produit déjà présent (venant du CSV) -> on met à jour ses valeurs
         if (produitsParCode[code]) {
             const info = produitsParCode[code];
             const row = info.row;
@@ -95,10 +109,13 @@ function applySavedState(saved, select, tbody) {
             if (tds[3] && data.stockMin !== undefined) tds[3].textContent = data.stockMin;
             if (tds[4] && data.stockMax !== undefined) tds[4].textContent = data.stockMax;
         } else {
-            // Produit ajouté dynamiquement auparavant -> on le recrée
+            // Produit ajouté dynamiquement dans une ancienne session -> on le recrée
+
+            // Création de la ligne <tr>
             const tr = document.createElement("tr");
             tr.dataset.codeBarre = code;
 
+            // On reconstitue les 5 colonnes principales
             const valeurs = [
                 data.code || code,
                 data.nom || "",
@@ -116,7 +133,7 @@ function applySavedState(saved, select, tbody) {
                 tr.appendChild(td);
             });
 
-            // Ajout cellule Actions
+            // Ajout de la cellule d'actions ( + / - / saisie / OK / X )
             ajouterCelluleActions(tr, code);
 
             // Ajout dans le tbody
@@ -140,6 +157,7 @@ function applySavedState(saved, select, tbody) {
 
 // ===============================
 //   FONCTION : login()
+//   (connexion utilisateur)
 // ===============================
 function login() {
     const username = document.getElementById("login_username").value;
@@ -149,6 +167,8 @@ function login() {
         document.getElementById("login_section").style.display = "none";
         document.getElementById("inventory_section").style.display = "block";
         document.getElementById("login_error").style.display = "none";
+
+        // Chargement des données
         getData();
     } else {
         document.getElementById("login_error").style.display = "block";
@@ -157,6 +177,7 @@ function login() {
 
 // ===============================
 //   FONCTION : logout()
+//   (déconnexion utilisateur)
 // ===============================
 function logout() {
     document.getElementById("login_section").style.display = "block";
@@ -174,7 +195,8 @@ function logout() {
     }
 
     document.getElementById("product").innerHTML = "";
-    // ⚠️ On NE vide PAS localStorage ici : on garde les données
+
+    // On NE vide PAS le localStorage ici, on garde les données
     produitsParCode = {};
 }
 
@@ -191,16 +213,19 @@ function getData() {
             return response.text();
         })
         .then(texteCSV => {
+            // On remet à zéro la structure en mémoire
             produitsParCode = {};
 
             const select = document.getElementById("productSelect");
             select.innerHTML = "";
 
+            // Option par défaut dans le select
             const optDefault = document.createElement("option");
             optDefault.value = "";
             optDefault.textContent = "-- Sélectionnez un produit --";
             select.appendChild(optDefault);
 
+            // Découpage du CSV
             const lignes = texteCSV.trim().split("\n");
             const entetes = lignes[0].split(",");
 
@@ -211,15 +236,15 @@ function getData() {
             const thead = document.createElement("thead");
             const tbody = document.createElement("tbody");
 
+            // En-têtes
             const trHead = document.createElement("tr");
-
             entetes.forEach(titre => {
                 const th = document.createElement("th");
                 th.textContent = titre;
                 trHead.appendChild(th);
             });
 
-            // Colonne Actions
+            // Colonne d'actions supplémentaire
             const thActions = document.createElement("th");
             thActions.textContent = "Actions";
             trHead.appendChild(thActions);
@@ -227,6 +252,7 @@ function getData() {
             thead.appendChild(trHead);
             table.appendChild(thead);
 
+            // Lignes de données venant du CSV (à partir de l'indice 1)
             for (let i = 1; i < lignes.length; i++) {
                 const ligneBrute = lignes[i].trim();
                 if (ligneBrute === "") continue;
@@ -249,47 +275,52 @@ function getData() {
                     tr.appendChild(td);
                 });
 
-                // Cellule d'actions ( + / - / saisie / OK / Suppr )
+                // Ajout de la cellule d'actions
                 ajouterCelluleActions(tr, codeBarre);
 
                 tbody.appendChild(tr);
 
                 const stockCell = tr.querySelector(".stockCell");
-
                 produitsParCode[codeBarre] = {
                     nom: nomProduit,
                     stockCell: stockCell,
                     row: tr
                 };
 
+                // Ajout au menu déroulant
                 const opt = document.createElement("option");
                 opt.value = codeBarre;
                 opt.textContent = nomProduit;
                 select.appendChild(opt);
             }
 
-            // Appliquer ce qui était en localStorage (ajouts, suppressions, stocks)
+            // On applique les modifications sauvegardées en local (ajouts, suppressions, stocks)
             const saved = loadSavedState();
             applySavedState(saved, select, tbody);
 
             table.appendChild(tbody);
             productDiv.appendChild(table);
 
+            // Réaction au changement de produit dans le select
             select.onchange = function () {
                 const code = this.value;
                 const info = produitsParCode[code];
 
+                // On remet le fond normal partout
                 Object.values(produitsParCode).forEach(p => {
                     p.row.style.backgroundColor = "";
                 });
 
+                // Si aucun produit sélectionné
                 if (!code || !info) {
                     document.getElementById("affichage_stock").textContent = "stock : 0";
                     return;
                 }
 
+                // Surbrillance de la ligne du produit sélectionné
                 info.row.style.backgroundColor = "#d0f0ff";
 
+                // Affichage du stock
                 const stockActuel = parseInt(info.stockCell.textContent) || 0;
                 document.getElementById("affichage_stock").textContent =
                     "stock : " + stockActuel;
@@ -323,7 +354,7 @@ function ajouterCelluleActions(tr, codeBarre) {
         retrait();
     };
 
-    // Saisie par ligne
+    // Saisie de stock par ligne
     const inputLigne = document.createElement("input");
     inputLigne.type = "text";
     inputLigne.size = 5;
@@ -338,7 +369,7 @@ function ajouterCelluleActions(tr, codeBarre) {
         inputLigne.value = "";
     };
 
-    // Bouton supprimer la ligne
+    // Bouton suppression (X)
     const btnDel = document.createElement("button");
     btnDel.textContent = "X";
     btnDel.onclick = function () {
@@ -388,6 +419,7 @@ function ajouterCelluleActions(tr, codeBarre) {
 //   (ajout d'un nouveau produit dans le tableau)
 // ===============================
 function addProduct() {
+    // On récupère les champs du formulaire d'ajout
     const codeInput = document.getElementById("new_code");
     const nomInput = document.getElementById("new_nom");
     const stockInput = document.getElementById("new_stock");
@@ -400,6 +432,7 @@ function addProduct() {
     const stockMin = stockMinInput.value.trim() === "" ? "0" : stockMinInput.value.trim();
     const stockMax = stockMaxInput.value.trim() === "" ? "0" : stockMaxInput.value.trim();
 
+    // Vérifications de base
     if (!codeBarre || !nomProduit) {
         alert("Merci de remplir au moins le code-barres et le nom du produit.");
         return;
@@ -410,6 +443,7 @@ function addProduct() {
         return;
     }
 
+    // On récupère le tableau existant
     const table = document.querySelector("#product table");
     if (!table) {
         alert("Tableau non trouvé.");
@@ -421,6 +455,7 @@ function addProduct() {
         return;
     }
 
+    // Création de la nouvelle ligne
     const tr = document.createElement("tr");
     tr.dataset.codeBarre = codeBarre;
 
@@ -430,6 +465,7 @@ function addProduct() {
         const td = document.createElement("td");
         td.textContent = valeur;
 
+        // Colonne stock
         if (index === 2) {
             td.classList.add("stockCell");
         }
@@ -440,7 +476,7 @@ function addProduct() {
     // Ajout de la cellule Actions
     ajouterCelluleActions(tr, codeBarre);
 
-    // Ajout au tableau
+    // Ajout dans le tableau
     tbody.appendChild(tr);
 
     // Enregistrement dans l'objet global
@@ -451,17 +487,17 @@ function addProduct() {
         row: tr
     };
 
-    // Ajout au menu déroulant
+    // Ajout dans le menu déroulant
     const select = document.getElementById("productSelect");
     const opt = document.createElement("option");
     opt.value = codeBarre;
     opt.textContent = nomProduit;
     select.appendChild(opt);
 
-    // Sauvegarde
+    // Sauvegarde dans localStorage
     saveCurrentState();
 
-    // Nettoyage des champs
+    // Nettoyage des champs du formulaire
     codeInput.value = "";
     nomInput.value = "";
     stockInput.value = "0";
@@ -489,6 +525,7 @@ function stock() {
 
     document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
 
+    // On sauvegarde la nouvelle valeur
     saveCurrentState();
 }
 
@@ -515,6 +552,7 @@ function retrait() {
     info.stockCell.textContent = stockActuel;
     document.getElementById("affichage_stock").textContent = "stock : " + stockActuel;
 
+    // Sauvegarde
     saveCurrentState();
 }
 
@@ -541,6 +579,7 @@ function definirStock() {
     let stockActuel = parseInt(info.stockCell.textContent) || 0;
     let nouveau_stock;
 
+    // Saisie relative +X
     if (saisie[0] === "+") {
         const nombre = parseInt(saisie.substring(1));
         if (isNaN(nombre)) {
@@ -548,6 +587,8 @@ function definirStock() {
             return;
         }
         nouveau_stock = stockActuel + nombre;
+
+        // Saisie relative -X
     } else if (saisie[0] === "-") {
         const nombre = parseInt(saisie.substring(1));
         if (isNaN(nombre)) {
@@ -555,6 +596,8 @@ function definirStock() {
             return;
         }
         nouveau_stock = stockActuel - nombre;
+
+        // Saisie absolue (ex : "12")
     } else {
         const nombre = parseInt(saisie);
         if (isNaN(nombre)) {
@@ -564,13 +607,16 @@ function definirStock() {
         nouveau_stock = nombre;
     }
 
+    // On empêche le stock d'être négatif
     if (nouveau_stock < 0) {
         nouveau_stock = 0;
     }
 
+    // Mise à jour
     info.stockCell.textContent = nouveau_stock;
     document.getElementById("affichage_stock").textContent = "stock : " + nouveau_stock;
     document.getElementById("input_stock").value = "";
 
+    // Sauvegarde
     saveCurrentState();
 }
