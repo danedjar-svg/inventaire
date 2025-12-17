@@ -32,18 +32,49 @@
 
         th,
         td {
-            border: 1px solid #999;
-            padding: 6px;
-            text-align: left;
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
         }
 
         th {
-            background-color: #f0f0f0;
+            background-color: #eee;
         }
 
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stock-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stock-actions input {
+            width: 100px;
+            padding: 6px;
+        }
+
+        .stock-actions label {
+            margin-right: 5px;
+        }
+
+        /* Message d'erreur de login */
         #login_error {
             color: red;
             display: none;
+            margin-top: 10px;
         }
 
         /* Bloc pour l'ajout de produit */
@@ -62,93 +93,115 @@
         .ajout-produit input {
             margin-bottom: 5px;
         }
+
+        /* ======================== */
+        /*  COULEURS AUTOMATIQUES   */
+        /* ======================== */
+
+        /* Vert = stock OK (entre min et max, hors zone d'approche) */
+        tr.status-good {
+            background-color: #d9f7d9;
+        }
+
+        /* Orange = proche du min/max (zone d'approche) */
+        tr.status-warning {
+            background-color: #ffe8b3;
+        }
+
+        /* Rouge = hors bornes (stock < 0, ou < min, ou > max) */
+        tr.status-danger {
+            background-color: #ffd0d0;
+        }
+
+        /* Garde la sélection visible sans écraser les couleurs */
+        tr.status-selected {
+            box-shadow: inset 0 0 0 2px #3aa0ff;
+        }
     </style>
 </head>
 
 <body>
 
-    <!-- =============================== -->
-    <!--       SECTION DE CONNEXION     -->
-    <!-- =============================== -->
+    <!-- SECTION DE LOGIN -->
     <div id="login_section">
-        <h1>Connexion</h1>
+        <div class="section-title">Connexion</div>
+        <label for="username">Nom d'utilisateur :</label>
+        <input type="text" id="username" placeholder="Entrez votre nom">
 
-        <label for="login_username">Nom d'utilisateur :</label>
-        <input type="text" id="login_username">
-        <br>
+        <label for="password">Mot de passe :</label>
+        <input type="password" id="password" placeholder="Entrez votre mot de passe">
 
-        <label for="login_password">Mot de passe :</label>
-        <input type="password" id="login_password">
-        <br>
+        <button onclick="login()">Se connecter</button>
 
-        <button type="button" onclick="login()">Se connecter</button>
-
-        <p id="login_error">Identifiants incorrects. Veuillez réessayer.</p>
+        <div id="login_error">Identifiants incorrects !</div>
     </div>
 
-    <!-- ===================================== -->
-    <!--   SECTION D'INVENTAIRE (APRÈS LOGIN) -->
-    <!-- ===================================== -->
-    <div id="inventory_section" style="display: none;">
+    <!-- SECTION D'INVENTAIRE (cachée au début) -->
+    <div id="inventory_section" style="display:none;">
+        <div class="section-title">Gestion de l'inventaire</div>
 
-        <!-- Bouton de déconnexion -->
-        <button type="button" onclick="logout()">Déconnexion</button>
+        <button onclick="loadCSV()">Charger le CSV</button>
+        <button onclick="saveCSV()">Sauvegarder le CSV</button>
 
-        <h1>Inventaire</h1>
-
-        <!-- Affichage du stock du produit sélectionné -->
-        <p id="affichage_stock">stock : 0</p>
-
-        <!-- Saisie globale de stock -->
-        <input type="text" id="input_stock" placeholder="Entrer un stock (ex: 5, +5, -5)">
-        <button type="button" onclick="definirStock()">Définir le Stock</button>
-        <button type="button" onclick="stock()">Ajouter au stock</button>
-        <button type="button" onclick="retrait()">Retirer du stock</button>
-
-        <br><br>
-
-        <!-- Choix du produit -->
-        <label for="productSelect">Choisir un produit :</label>
-        <select id="productSelect">
-            <option value="">-- Sélectionnez un produit --</option>
-        </select>
-
-        <br><br>
-
-        <!-- ======================== -->
-        <!--   AJOUT D'UN PRODUIT     -->
-        <!-- ======================== -->
+        <!-- Ajout de produit -->
         <div class="ajout-produit">
-            <h2>Ajouter un produit</h2>
+            <div style="font-weight:bold; margin-bottom:10px;">Ajouter un produit</div>
 
             <div>
-                <label for="new_code">Code-barres :</label>
-                <input type="text" id="new_code">
+                <label for="new_code">Code barre :</label>
+                <input type="text" id="new_code" placeholder="ex: 1234567890123">
             </div>
             <div>
-                <label for="new_nom">Nom du produit :</label>
-                <input type="text" id="new_nom">
+                <label for="new_name">Nom produit :</label>
+                <input type="text" id="new_name" placeholder="ex: Produit X">
             </div>
             <div>
-                <label for="new_stock">Stock initial :</label>
+                <label for="new_stock">Stock :</label>
                 <input type="number" id="new_stock" value="0">
             </div>
             <div>
-                <label for="new_stock_min">Stock min :</label>
-                <input type="number" id="new_stock_min" value="0">
+                <label for="new_min">Stock min :</label>
+                <input type="number" id="new_min" value="0">
             </div>
             <div>
-                <label for="new_stock_max">Stock max :</label>
-                <input type="number" id="new_stock_max" value="0">
+                <label for="new_max">Stock max :</label>
+                <input type="number" id="new_max" value="0">
             </div>
 
-            <button type="button" onclick="addProduct()">Ajouter le produit</button>
+            <button onclick="ajouterProduit()">Ajouter</button>
         </div>
 
-        <!-- ======================== -->
-        <!--   TABLEAU DES PRODUITS   -->
-        <!-- ======================== -->
-        <div id="product"></div>
+        <!-- Zone pour scanner un produit -->
+        <div class="stock-actions">
+            <div>
+                <label for="scan_code">Scanner code :</label>
+                <input type="text" id="scan_code" placeholder="Code barre">
+            </div>
+
+            <div>
+                <label for="qty_change">Quantité :</label>
+                <input type="number" id="qty_change" value="1">
+            </div>
+
+            <button onclick="incrementerStock()">+ Ajouter</button>
+            <button onclick="decrementerStock()">- Retirer</button>
+        </div>
+
+        <!-- Tableau qui affichera les données -->
+        <table id="stock_table">
+            <thead>
+                <tr>
+                    <th>Code barre</th>
+                    <th>Nom produit</th>
+                    <th>Stock</th>
+                    <th>Stock min</th>
+                    <th>Stock max</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Les lignes seront ajoutées en JS -->
+            </tbody>
+        </table>
 
     </div>
 
