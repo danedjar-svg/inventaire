@@ -1,133 +1,157 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Gestion des Stocks</title>
+<!DOCTYPE html> <!-- Indique que le document est en HTML5 -->
 
-  <!-- Fichier JS principal -->
-  <script type="text/javascript" src="getData.js"></script>
+<html lang="fr"> <!-- La langue principale de la page est le français -->
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des Stocks</title>
+
+    <!-- Lien vers ton fichier JavaScript -->
+    <script type="text/javascript" src="getData.js"></script>
+
+    <!-- Un peu de style pour que ce soit lisible -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #login_section,
+        #inventory_section {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        #login_error {
+            color: red;
+            display: none;
+        }
+
+        /* Bloc pour l'ajout de produit */
+        .ajout-produit {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+        }
+
+        .ajout-produit label {
+            display: inline-block;
+            width: 120px;
+        }
+
+        .ajout-produit input {
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 
 <body>
 
-  <!-- =============================== -->
-  <!--       SECTION DE CONNEXION     -->
-  <!-- =============================== -->
-  <div id="login_section">
-    <h1>Connexion</h1>
+    <!-- =============================== -->
+    <!--       SECTION DE CONNEXION     -->
+    <!-- =============================== -->
+    <div id="login_section">
+        <h1>Connexion</h1>
 
-    <label for="login_username">Nom d'utilisateur :</label>
-    <input type="text" id="login_username">
-    <br>
+        <label for="login_username">Nom d'utilisateur :</label>
+        <input type="text" id="login_username">
+        <br>
 
-    <label for="login_password">Mot de passe :</label>
-    <input type="password" id="login_password">
-    <br>
+        <label for="login_password">Mot de passe :</label>
+        <input type="password" id="login_password">
+        <br>
 
-    <button type="button" onclick="login()">Se connecter</button>
+        <button type="button" onclick="login()">Se connecter</button>
 
-    <!-- Message d'erreur login -->
-    <p id="login_error" style="color:red;"></p>
-  </div>
+        <p id="login_error">Identifiants incorrects. Veuillez réessayer.</p>
+    </div>
 
-  <!-- ===================================== -->
-  <!--   SECTION D'INVENTAIRE (APRÈS LOGIN) -->
-  <!-- ===================================== -->
-  <div id="inventory_section" style="display:none;">
+    <!-- ===================================== -->
+    <!--   SECTION D'INVENTAIRE (APRÈS LOGIN) -->
+    <!-- ===================================== -->
+    <div id="inventory_section" style="display: none;">
 
-    <button type="button" onclick="logout()">Déconnexion</button>
+        <!-- Bouton de déconnexion -->
+        <button type="button" onclick="logout()">Déconnexion</button>
 
-    <h1>Inventaire</h1>
+        <h1>Inventaire</h1>
 
-    <!-- Affichage du produit sélectionné -->
-    <p><strong>Produit :</strong> <span id="affichage_nom"></span></p>
-    <p><strong>Stock :</strong> <span id="affichage_stock">0</span></p>
+        <!-- Affichage du stock du produit sélectionné -->
+        <p id="affichage_stock">stock : 0</p>
 
-    <!-- Champ pour modifier le stock du produit sélectionné -->
-    <input
-      type="text"
-      id="input_stock"
-      placeholder="Entrer un stock (ex: 5, +5, -5)"
-    >
+        <!-- Saisie globale de stock -->
+        <input type="text" id="input_stock" placeholder="Entrer un stock (ex: 5, +5, -5)">
+        <button type="button" onclick="definirStock()">Définir le Stock</button>
+        <button type="button" onclick="stock()">Ajouter au stock</button>
+        <button type="button" onclick="retrait()">Retirer du stock</button>
 
-    <!-- Actions stock -->
-    <button type="button" onclick="definirStock()">Valider</button>
-    <button type="button" onclick="stock()">+1</button>
-    <button type="button" onclick="retrait()">-1</button>
+        <br><br>
 
-    <br><br>
+        <!-- Choix du produit -->
+        <label for="productSelect">Choisir un produit :</label>
+        <select id="productSelect">
+            <option value="">-- Sélectionnez un produit --</option>
+        </select>
 
-    <!-- Sauvegarde navigateur + export CSV -->
-    <button type="button" onclick="sauvegarderDansNavigateur()">Sauvegarder (navigateur)</button>
-    <button type="button" onclick="exporterCSV()">Exporter CSV</button>
+        <br><br>
 
-    <br><br>
+        <!-- ======================== -->
+        <!--   AJOUT D'UN PRODUIT     -->
+        <!-- ======================== -->
+        <div class="ajout-produit">
+            <h2>Ajouter un produit</h2>
 
-    <!-- Recherche -->
-    <label for="searchInput"><strong>Recherche :</strong></label>
-    <input type="text" id="searchInput" placeholder="Tape un code ou un nom..." autocomplete="off">
-    <button type="button" onclick="effacerRecherche()">X</button>
+            <div>
+                <label for="new_code">Code-barres :</label>
+                <input type="text" id="new_code">
+            </div>
+            <div>
+                <label for="new_nom">Nom du produit :</label>
+                <input type="text" id="new_nom">
+            </div>
+            <div>
+                <label for="new_stock">Stock initial :</label>
+                <input type="number" id="new_stock" value="0">
+            </div>
+            <div>
+                <label for="new_stock_min">Stock min :</label>
+                <input type="number" id="new_stock_min" value="0">
+            </div>
+            <div>
+                <label for="new_stock_max">Stock max :</label>
+                <input type="number" id="new_stock_max" value="0">
+            </div>
 
-    <br><br>
+            <button type="button" onclick="addProduct()">Ajouter le produit</button>
+        </div>
 
-    <!-- Sélection d'un produit -->
-    <label for="productSelect">Choisir un produit :</label>
-    <select id="productSelect" onchange="afficherProduit()">
-      <option value="">-- Sélectionnez un produit --</option>
-    </select>
+        <!-- ======================== -->
+        <!--   TABLEAU DES PRODUITS   -->
+        <!-- ======================== -->
+        <div id="product"></div>
 
-    <br><br>
+    </div>
 
-    <!-- Tableau des produits -->
-    <div id="product"></div>
-
-    <hr>
-
-    <!-- ======================== -->
-    <!--    AJOUT D'UN PRODUIT   -->
-    <!-- ======================== -->
-
-    <!-- Seul ce bouton est visible -->
-    <button type="button" id="openAddProduct">Ajouter un produit</button>
-
-    <!-- Popup native HTML -->
-    <dialog id="addProductDialog">
-      <form method="dialog" id="addProductForm">
-        <h2>Ajouter un produit</h2>
-
-        <p>
-          <label for="new_code">Code-barres :</label><br>
-          <input type="text" id="new_code" required>
-        </p>
-
-        <p>
-          <label for="new_name">Nom :</label><br>
-          <input type="text" id="new_name" required>
-        </p>
-
-        <p>
-          <label for="new_stock">Stock :</label><br>
-          <input type="number" id="new_stock" value="0">
-        </p>
-
-        <p>
-          <label for="new_min">Stock mini :</label><br>
-          <input type="number" id="new_min" value="0">
-        </p>
-
-        <p>
-          <label for="new_max">Stock maxi :</label><br>
-          <input type="number" id="new_max" value="0">
-        </p>
-
-        <!-- Boutons de la popup -->
-        <menu>
-          <button value="cancel">Annuler</button>
-          <button id="confirmAddProduct" value="default">Ajouter</button>
-        </menu>
-      </form>
-    </dialog>
-
-  </div>
 </body>
+
 </html>
