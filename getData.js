@@ -2,33 +2,27 @@
 //   ETAT GLOBAL
 // =========================================================
 
-// Dictionnaire produits indexé par code-barres
-// produitsParCode[code] = { nom, row, stockCell }
 let produitsParCode = {};
 
-// Petit helper pour getElementById
-function $(id) { return document.getElementById(id); }
+function $(id) {
+  return document.getElementById(id);
+}
 
 // =========================================================
 //   LOGIN / LOGOUT
 // =========================================================
 
 function login() {
-  const u = ($("login_username").value || "").trim();
-  const p = ($("login_password").value || "").trim();
+  const u = $("login_username").value.trim();
+  const p = $("login_password").value.trim();
 
-  // Login simple "en dur" (pour l'instant)
   if (u === "admin" && p === "1234") {
     $("login_error").textContent = "";
-
-    // On masque le login et on affiche l'inventaire
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
-
-    // On charge les données CSV
     getData();
   } else {
-    $("login_error").textContent = "Identifiants incorrects. Veuillez réessayer.";
+    $("login_error").textContent = "Identifiants incorrects";
   }
 }
 
@@ -36,241 +30,110 @@ function logout() {
   $("login_username").value = "";
   $("login_password").value = "";
   $("login_error").textContent = "";
-
-  // On masque l'inventaire et on ré-affiche le login
   $("inventory_section").style.display = "none";
   $("login_section").style.display = "block";
-
-  // Reset affichage sélection
-  $("affichage_nom").textContent = "";
-  $("affichage_stock").textContent = "0";
-  $("input_stock").value = "";
 }
 
 // =========================================================
-//   CHARGEMENT CSV + CONSTRUCTION TABLE
+//   CHARGEMENT CSV
 // =========================================================
 
 function getData() {
   fetch("Data.csv")
-    .then(r => {
-      if (!r.ok) throw new Error("Erreur HTTP : " + r.status);
-      return r.text();
-    })
-    .then(csvText => {
-      // Si l'utilisateur avait sauvegardé dans le navigateur,
-      // on prend cette version à la place du fichier.
-      try {
-        const saved = localStorage.getItem("stockCSV");
-        if (saved) csvText = saved;
-      } catch (e) {}
-
-      // Reset
+    .then(r => r.text())
+    .then(csv => {
       produitsParCode = {};
 
-      // Découpe du CSV
-      const lignes = csvText.trim().split("\n").filter(l => l.trim() !== "");
-      if (lignes.length < 2) {
-        console.warn("CSV vide ou invalide");
-        renderTableVide();
-        return;
-      }
+      const lignes = csv.trim().split("\n");
+      const headers = lignes[0].split(",");
 
-      // Headers (ligne 0)
-      const headers = lignes[0].split(",").map(h => h.trim());
-
-      // Reset UI table
       const productDiv = $("product");
       productDiv.innerHTML = "";
 
-      // Création table
       const table = document.createElement("table");
       table.border = "1";
       table.style.borderCollapse = "collapse";
       table.style.width = "100%";
 
-      // thead
       const thead = document.createElement("thead");
       const trh = document.createElement("tr");
 
       headers.forEach(h => {
         const th = document.createElement("th");
         th.textContent = h;
-        th.style.padding = "6px";
         trh.appendChild(th);
       });
 
-      const thA = document.createElement("th");
-      thA.textContent = "Actions";
-      thA.style.padding = "6px";
-      trh.appendChild(thA);
+      const thAction = document.createElement("th");
+      thAction.textContent = "Actions";
+      trh.appendChild(thAction);
 
       thead.appendChild(trh);
       table.appendChild(thead);
 
-      // tbody
       const tbody = document.createElement("tbody");
       tbody.id = "productBody";
 
-      // Reset select (garder l'option placeholder)
       const select = $("productSelect");
       select.innerHTML = `<option value="">-- Sélectionnez un produit --</option>`;
 
-      // Parcours des lignes data
       for (let i = 1; i < lignes.length; i++) {
-        const vals = lignes[i].split(",").map(v => v.trim());
-
-        const codeBarre = vals[0] || "";
-        const nomProduit = vals[1] || "";
-
-        if (!codeBarre) continue;
+        const vals = lignes[i].split(",");
+        const code = vals[0].trim();
+        const nom = vals[1].trim();
 
         const tr = document.createElement("tr");
-        tr.dataset.codeBarre = codeBarre;
 
-        // Création des cellules CSV (code, nom, stock, min, max)
         vals.forEach(v => {
           const td = document.createElement("td");
-          td.textContent = v;
-          td.style.padding = "6px";
+          td.textContent = v.trim();
           tr.appendChild(td);
         });
 
-        // Création cellule actions
-        const tdActions = document.createElement("td");
-        tdActions.style.padding = "6px";
+        const tdAction = document.createElement("td");
 
-        // Bouton +
         const btnPlus = document.createElement("button");
-        btnPlus.type = "button";
         btnPlus.textContent = "+";
         btnPlus.onclick = () => {
-          select.value = codeBarre;
+          select.value = code;
           afficherProduit();
           stock();
         };
 
-        // Bouton -
         const btnMoins = document.createElement("button");
-        btnMoins.type = "button";
         btnMoins.textContent = "-";
         btnMoins.onclick = () => {
-          select.value = codeBarre;
+          select.value = code;
           afficherProduit();
           retrait();
         };
 
-        // Input rapide ligne
-        const inputLigne = document.createElement("input");
-        inputLigne.type = "text";
-        inputLigne.size = 6;
-        inputLigne.placeholder = "5, +5";
-        inputLigne.style.margin = "0 6px";
-
-        // OK ligne => applique definirStock()
-        const btnOK = document.createElement("button");
-        btnOK.type = "button";
-        btnOK.textContent = "OK";
-        btnOK.onclick = () => {
-          select.value = codeBarre;
-          afficherProduit();
-          $("input_stock").value = (inputLigne.value || "").trim();
-          definirStock();
-          inputLigne.value = "";
-        };
-
-        // Enter sur input ligne => OK
-        inputLigne.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            btnOK.click();
-          }
-        });
-
-        // Supprimer
-        const btnSuppr = document.createElement("button");
-        btnSuppr.type = "button";
-        btnSuppr.textContent = "Supprimer";
-        btnSuppr.style.marginLeft = "6px";
-        btnSuppr.onclick = () => {
-          if (!confirm("Supprimer ce produit ?")) return;
-
-          tr.remove();
-          delete produitsParCode[codeBarre];
-
-          const opt = select.querySelector(`option[value="${codeBarre}"]`);
-          if (opt) opt.remove();
-
-          if (select.value === codeBarre) {
-            select.value = "";
-            $("affichage_nom").textContent = "";
-            $("affichage_stock").textContent = "0";
-          }
-
-          filtrerProduits();
-        };
-
-        // Montage actions
-        tdActions.appendChild(btnPlus);
-        tdActions.appendChild(btnMoins);
-        tdActions.appendChild(inputLigne);
-        tdActions.appendChild(btnOK);
-        tdActions.appendChild(btnSuppr);
-
-        tr.appendChild(tdActions);
-
-        // Stock cell = colonne index 2
-        const stockCell = tr.children[2];
-
-        // Enregistrement dans le dictionnaire
-        produitsParCode[codeBarre] = {
-          nom: nomProduit,
-          row: tr,
-          stockCell: stockCell
-        };
-
-        // Ajout option dans le select
-        const option = document.createElement("option");
-        option.value = codeBarre;
-        option.textContent = `${codeBarre} - ${nomProduit}`;
-        select.appendChild(option);
-
-        // Mise à jour état / couleur inline
-        mettreAJourEtatLigne(codeBarre);
+        tdAction.appendChild(btnPlus);
+        tdAction.appendChild(btnMoins);
+        tr.appendChild(tdAction);
 
         tbody.appendChild(tr);
+
+        produitsParCode[code] = {
+          nom: nom,
+          row: tr,
+          stockCell: tr.children[2]
+        };
+
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = `${code} - ${nom}`;
+        select.appendChild(opt);
       }
 
       table.appendChild(tbody);
       productDiv.appendChild(table);
-
-      // Afficher le premier produit si existant
-      if (select.options.length > 1) {
-        select.selectedIndex = 1;
-        afficherProduit();
-      } else {
-        select.value = "";
-        $("affichage_nom").textContent = "";
-        $("affichage_stock").textContent = "0";
-      }
-
-      // Recherche instantanée
-      const searchInput = $("searchInput");
-      if (searchInput) {
-        searchInput.oninput = filtrerProduits;
-        filtrerProduits();
-      }
     })
-    .catch(err => console.error("Erreur chargement CSV :", err));
-}
-
-function renderTableVide() {
-  const productDiv = $("product");
-  if (productDiv) productDiv.textContent = "Aucun produit dans le CSV.";
+    .catch(err => console.error(err));
 }
 
 // =========================================================
-//   AFFICHAGE PRODUIT SELECTIONNE
+//   AFFICHAGE PRODUIT
 // =========================================================
 
 function afficherProduit() {
@@ -284,17 +147,70 @@ function afficherProduit() {
   }
 
   $("affichage_nom").textContent = p.nom;
-  $("affichage_stock").textContent = (p.stockCell.textContent || "0");
+  $("affichage_stock").textContent = p.stockCell.textContent;
 }
 
 // =========================================================
-//   ALERTES SEUILS (NEGATIF / MIN / MAX)
+//   GESTION DU STOCK
 // =========================================================
-//
-// Objectif : ne pas spammer.
-// On alerte seulement au moment où on "franchit" un seuil.
-//
-// Exemple :
-// - si tu es déjà en dessous du min et que tu diminues encore,
-//   on ne ré-affiche pas
-// - si tu es au-dessus du min et que tu diminues en dessous, 
+
+function definirStock() {
+  const code = $("productSelect").value;
+  const val = $("input_stock").value.trim();
+  if (!code || !val) return;
+
+  const current = parseInt(produitsParCode[code].stockCell.textContent, 10);
+
+  let newVal;
+  if (/^[+-]\d+$/.test(val)) {
+    newVal = current + parseInt(val, 10);
+  } else if (/^\d+$/.test(val)) {
+    newVal = parseInt(val, 10);
+  } else {
+    alert("Format invalide");
+    return;
+  }
+
+  produitsParCode[code].stockCell.textContent = newVal;
+  $("affichage_stock").textContent = newVal;
+  $("input_stock").value = "";
+}
+
+function stock() {
+  const code = $("productSelect").value;
+  if (!code) return;
+  definirStockValue(code, +1);
+}
+
+function retrait() {
+  const code = $("productSelect").value;
+  if (!code) return;
+  definirStockValue(code, -1);
+}
+
+function definirStockValue(code, delta) {
+  const p = produitsParCode[code];
+  const val = parseInt(p.stockCell.textContent, 10) + delta;
+  p.stockCell.textContent = val;
+  $("affichage_stock").textContent = val;
+}
+
+// =========================================================
+//   RECHERCHE
+// =========================================================
+
+function filtrerProduits() {
+  const q = $("searchInput").value.toLowerCase();
+  const rows = document.querySelectorAll("#productBody tr");
+
+  rows.forEach(r => {
+    const code = r.children[0].textContent.toLowerCase();
+    const nom = r.children[1].textContent.toLowerCase();
+    r.style.display = (code.includes(q) || nom.includes(q)) ? "" : "none";
+  });
+}
+
+function effacerRecherche() {
+  $("searchInput").value = "";
+  filtrerProduits();
+}
