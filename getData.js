@@ -59,8 +59,8 @@ function updateAllRowsStatus() {
 // ===============================
 
 function login() {
-    const username = document.getElementById("admin").value.trim();
-    const password = document.getElementById("1234").value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
 
     // Identifiants en dur pour l'exemple
     if (username === "admin" && password === "admin") {
