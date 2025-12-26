@@ -1,167 +1,100 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Gestion des Stocks</title>
+  <meta charset="UTF-8" />
+  <title>Gestion des Stocks</title>
 
-    <script type="text/javascript" src="getData.js"></script>
+  <!-- IMPORTANT: defer = le JS ne s'exécute qu'après le chargement du HTML -->
+  <script src="getData.js" defer></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
 
-        #login_section,
-        #inventory_section {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
+    #login_section, #inventory_section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
 
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 10px;
-        }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #999; padding: 6px; text-align: center; }
+    th { background: #f0f0f0; }
 
-        th,
-        td {
-            border: 1px solid #999;
-            padding: 6px;
-            text-align: left;
-        }
+    button { padding: 6px 10px; margin: 2px; cursor: pointer; }
+    input[type="text"], input[type="number"], input[type="password"] { padding: 6px; }
 
-        th {
-            background-color: #f0f0f0;
-        }
+    #login_error { color: red; display: none; margin-top: 8px; }
 
-        #login_error {
-            color: red;
-            display: none;
-        }
+    .row-actions { display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap; }
+    .row-actions input { width: 90px; }
 
-        .ajout-produit {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            padding: 10px;
-            border: 1px dashed #ccc;
-        }
+    /* Couleurs automatiques */
+    tr.status-good    { background-color: #d9f7d9; }
+    tr.status-warning { background-color: #ffe8b3; }
+    tr.status-danger  { background-color: #ffd0d0; }
 
-        .ajout-produit label {
-            display: inline-block;
-            width: 120px;
-        }
-
-        .ajout-produit input {
-            margin-bottom: 5px;
-        }
-
-        /* ======================== */
-        /*  COULEURS AUTOMATIQUES   */
-        /* ======================== */
-
-        /* Vert = stock OK */
-        tr.status-good {
-            background-color: #d9f7d9;
-        }
-
-        /* Orange = proche des seuils */
-        tr.status-warning {
-            background-color: #ffe8b3;
-        }
-
-        /* Rouge = critique (négatif / hors bornes) */
-        tr.status-danger {
-            background-color: #ffd0d0;
-        }
-
-        /* Sélection visible SANS écraser la couleur */
-        tr.status-selected {
-            box-shadow: inset 0 0 0 2px #3aa0ff;
-        }
-    </style>
+    /* Sélection visible SANS écraser la couleur */
+    tr.status-selected { box-shadow: inset 0 0 0 2px #3aa0ff; }
+  </style>
 </head>
 
 <body>
 
-    <!-- =============================== -->
-    <!--       SECTION DE CONNEXION     -->
-    <!-- =============================== -->
-    <div id="login_section">
-        <h1>Connexion</h1>
+  <!-- LOGIN -->
+  <div id="login_section">
+    <h2>Connexion</h2>
 
-        <label for="login_username">Nom d'utilisateur :</label>
-        <input type="text" id="login_username">
-        <br>
+    <label for="login_username">Nom d'utilisateur :</label>
+    <input type="text" id="login_username" placeholder="admin" />
 
-        <label for="login_password">Mot de passe :</label>
-        <input type="password" id="login_password">
-        <br>
+    <label for="login_password">Mot de passe :</label>
+    <input type="password" id="login_password" placeholder="1234" />
 
-        <button type="button" onclick="login()">Se connecter</button>
+    <button type="button" onclick="login()">Se connecter</button>
 
-        <p id="login_error">Identifiants incorrects. Veuillez réessayer.</p>
+    <div id="login_error">Identifiants incorrects.</div>
+  </div>
+
+  <!-- INVENTAIRE -->
+  <div id="inventory_section" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <h2 style="margin:0;">Inventaire</h2>
+      <button type="button" onclick="logout()">Déconnexion</button>
     </div>
 
-    <!-- ===================================== -->
-    <!--   SECTION D'INVENTAIRE (APRÈS LOGIN) -->
-    <!-- ===================================== -->
-    <div id="inventory_section" style="display: none;">
+    <p id="affichage_stock">stock : 0</p>
 
-        <button type="button" onclick="logout()">Déconnexion</button>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label for="productSelect">Produit :</label>
+      <select id="productSelect">
+        <option value="">-- Sélectionnez un produit --</option>
+      </select>
 
-        <h1>Inventaire</h1>
+      <input type="text" id="input_stock" placeholder="ex: 5, +5, -5" />
 
-        <p id="affichage_stock">stock : 0</p>
-
-        <input type="text" id="input_stock" placeholder="Entrer un stock (ex: 5, +5, -5)">
-        <button type="button" onclick="definirStock()">Définir le Stock</button>
-        <button type="button" onclick="stock()">Ajouter au stock</button>
-        <button type="button" onclick="retrait()">Retirer du stock</button>
-
-        <br><br>
-
-        <label for="productSelect">Choisir un produit :</label>
-        <select id="productSelect">
-            <option value="">-- Sélectionnez un produit --</option>
-        </select>
-
-        <br><br>
-
-        <div class="ajout-produit">
-            <h2>Ajouter un produit</h2>
-
-            <div>
-                <label for="new_code">Code-barres :</label>
-                <input type="text" id="new_code">
-            </div>
-            <div>
-                <label for="new_nom">Nom du produit :</label>
-                <input type="text" id="new_nom">
-            </div>
-            <div>
-                <label for="new_stock">Stock initial :</label>
-                <input type="number" id="new_stock" value="0">
-            </div>
-            <div>
-                <label for="new_stock_min">Stock min :</label>
-                <input type="number" id="new_stock_min" value="0">
-            </div>
-            <div>
-                <label for="new_stock_max">Stock max :</label> 
-                <input type="number" id="new_stock_max" value="0">
-            </div>
-
-            <button type="button" onclick="addProduct()">Ajouter le produit</button>
-        </div>
-
-        <div id="product"></div>
-
+      <button type="button" onclick="definirStock()">Définir</button>
+      <button type="button" onclick="stock()">+1</button>
+      <button type="button" onclick="retrait()">-1</button>
     </div>
+
+    <hr />
+
+    <h3>Ajouter un produit</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <input type="text" id="new_code" placeholder="Code barre" />
+      <input type="text" id="new_nom" placeholder="Nom produit" />
+      <input type="number" id="new_stock" placeholder="Stock" value="0" />
+      <input type="number" id="new_stock_min" placeholder="Stock min" value="0" />
+      <input type="number" id="new_stock_max" placeholder="Stock max" value="0" />
+      <button type="button" onclick="addProduct()">Ajouter</button>
+    </div>
+
+    <hr />
+
+    <!-- Tableau injecté ici -->
+    <div id="product"></div>
+  </div>
 
 </body>
-
 </html>
