@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Gestion des Stocks</title>
 
-  <!-- IMPORTANT: defer = le JS ne s'exécute qu'après le chargement du HTML -->
   <script src="getData.js" defer></script>
 
   <style>
@@ -29,70 +28,62 @@
     .row-actions { display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap; }
     .row-actions input { width: 90px; }
 
-    /* Couleurs automatiques */
     tr.status-good    { background-color: #d9f7d9; }
     tr.status-warning { background-color: #ffe8b3; }
     tr.status-danger  { background-color: #ffd0d0; }
 
-    /* Sélection visible SANS écraser la couleur */
     tr.status-selected { box-shadow: inset 0 0 0 2px #3aa0ff; }
   </style>
 </head>
 
 <body>
 
-  <!-- LOGIN -->
   <div id="login_section">
     <h2>Connexion</h2>
 
-    <label for="login_username">Nom d'utilisateur :</label>
-    <input type="text" id="login_username" placeholder="admin" />
+    <label>Nom d'utilisateur :</label>
+    <input type="text" id="login_username" />
 
-    <label for="login_password">Mot de passe :</label>
-    <input type="password" id="login_password" placeholder="1234" />
+    <label>Mot de passe :</label>
+    <input type="password" id="login_password" />
 
-    <button type="button" onclick="login()">Se connecter</button>
+    <button onclick="login()">Se connecter</button>
 
     <div id="login_error">Identifiants incorrects.</div>
   </div>
 
-  <!-- INVENTAIRE -->
   <div id="inventory_section" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-      <h2 style="margin:0;">Inventaire</h2>
-      <button type="button" onclick="logout()">Déconnexion</button>
+    <div style="display:flex; justify-content:space-between;">
+      <h2>Inventaire</h2>
+      <button onclick="logout()">Déconnexion</button>
     </div>
 
     <p id="affichage_stock">stock : 0</p>
 
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <label for="productSelect">Produit :</label>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <select id="productSelect">
         <option value="">-- Sélectionnez un produit --</option>
       </select>
 
       <input type="text" id="input_stock" placeholder="ex: 5, +5, -5" />
 
-      <button type="button" onclick="definirStock()">Définir</button>
-      <button type="button" onclick="stock()">+1</button>
-      <button type="button" onclick="retrait()">-1</button>
+      <button onclick="definirStock()">Définir</button>
+      <button onclick="stock()">+1</button>
+      <button onclick="retrait()">-1</button>
     </div>
 
-    <hr />
+    <hr>
 
     <h3>Ajouter un produit</h3>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <input type="text" id="new_code" placeholder="Code barre" />
-      <input type="text" id="new_nom" placeholder="Nom produit" />
-      <input type="number" id="new_stock" placeholder="Stock" value="0" />
-      <input type="number" id="new_stock_min" placeholder="Stock min" value="0" />
-      <input type="number" id="new_stock_max" placeholder="Stock max" value="0" />
-      <button type="button" onclick="addProduct()">Ajouter</button>
-    </div>
+    <input id="new_code" placeholder="Code barre">
+    <input id="new_nom" placeholder="Nom">
+    <input id="new_stock" type="number" value="0">
+    <input id="new_stock_min" type="number" value="0">
+    <input id="new_stock_max" type="number" value="0">
+    <button onclick="addProduct()">Ajouter</button>
 
-    <hr />
+    <hr>
 
-    <!-- Tableau injecté ici -->
     <div id="product"></div>
   </div>
 
