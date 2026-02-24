@@ -1,3 +1,11 @@
+/* ============================================================
+   getData.js (VERSION COMPLETE)
+   - Gestion stock (+1 / -1 / définir)
+   - Couleurs (vert / orange / rouge)
+   - Sauvegarde localStorage
+   - AJOUT : suppression d’un produit (persistante)
+   ============================================================ */
+
 // ===============================
 //   CONFIG
 // ===============================
@@ -73,7 +81,6 @@ function updateRowStatus(tr) {
     (hasMax && stock > stockMax);
 
   // ORANGE : UNIQUEMENT à 1 de différence (sans être rouge)
-  // Donc : stock == min+1 ou stock == max-1
   const isWarning = !isDanger && (
     (hasMin && stock === stockMin + 1) ||
     (hasMax && stock === stockMax - 1)
@@ -98,8 +105,14 @@ function loadSavedState() {
   }
 }
 
+/**
+ * Sauvegarde l’état courant SANS effacer les suppressions.
+ * (on repart de l’existant pour conserver les deleted:true)
+ */
 function saveCurrentState() {
-  const state = {};
+  const previous = loadSavedState(); // conserve deleted:true
+  const state = { ...previous };
+
   Object.entries(produitsParCode).forEach(([code, info]) => {
     const tds = info.row.querySelectorAll("td");
     state[code] = {
@@ -111,6 +124,7 @@ function saveCurrentState() {
       deleted: false
     };
   });
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -144,6 +158,38 @@ function logout() {
   produitsParCode = {};
   selectedCode = "";
   $("affichage_stock").textContent = "stock : 0";
+}
+
+// ===============================
+//   SUPPRESSION PRODUIT (NOUVEAU)
+// ===============================
+function deleteProduct(code) {
+  const info = produitsParCode[code];
+  if (!info) return;
+
+  const ok = confirm(`Supprimer le produit "${info.nom}" (${code}) ?`);
+  if (!ok) return;
+
+  // 1) Supprime la ligne du tableau
+  info.row.remove();
+
+  // 2) Supprime du state
+  delete produitsParCode[code];
+
+  // 3) Si c’était sélectionné
+  if (selectedCode === code) {
+    selectedCode = "";
+    $("productSelect").value = "";
+    $("affichage_stock").textContent = "stock : 0";
+  }
+
+  // 4) Enregistre la suppression (persistante)
+  const saved = loadSavedState();
+  saved[code] = { deleted: true };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
+  // 5) Rebuild dropdown
+  rebuildDropdown();
 }
 
 // ===============================
@@ -188,10 +234,19 @@ function ajouterCelluleActions(tr, codeBarre) {
     inputLigne.value = "";
   };
 
+  // ---- NOUVEAU : bouton Supprimer
+  const btnDelete = document.createElement("button");
+  btnDelete.textContent = "Supprimer";
+  btnDelete.type = "button";
+  btnDelete.onclick = () => {
+    deleteProduct(codeBarre);
+  };
+
   wrap.appendChild(btnPlus);
   wrap.appendChild(btnMoins);
   wrap.appendChild(inputLigne);
   wrap.appendChild(btnOk);
+  wrap.appendChild(btnDelete);
 
   tdActions.appendChild(wrap);
   tr.appendChild(tdActions);
@@ -297,6 +352,7 @@ function getData() {
       Object.keys(saved).forEach(code => {
         const data = saved[code];
         if (!data || data.deleted) return;
+
         const info = produitsParCode[code];
         if (!info) return;
 
@@ -308,6 +364,18 @@ function getData() {
         info.nom = data.nom;
 
         updateRowStatus(info.row);
+      });
+
+      // Retire du tableau les produits supprimés (deleted:true)
+      Object.keys(saved).forEach(code => {
+        const data = saved[code];
+        if (!data || !data.deleted) return;
+
+        const info = produitsParCode[code];
+        if (!info) return;
+
+        info.row.remove();
+        delete produitsParCode[code];
       });
 
       rebuildDropdown();
