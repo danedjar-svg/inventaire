@@ -222,6 +222,17 @@ function ajouterCelluleActions(tr, codeBarre) {
   const inputLigne = document.createElement("input");
   inputLigne.type = "text";
   inputLigne.placeholder = "5, +5, -3";
+  inputLigne.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    $("productSelect").value = codeBarre;
+    setSelected(codeBarre);
+    $("input_stock").value = inputLigne.value.trim();
+    definirStock();
+    inputLigne.value = "";
+  }
+});
 
   const btnOk = document.createElement("button");
   btnOk.textContent = "OK";
@@ -509,7 +520,7 @@ function addProduct() {
   $("new_stock_max").value = "0";
 
 function deleteProductByInput() {
-  const code = $("delete_code").value.trim();
+  const code = $("delete_code").value.trim(); 
 
   if (!code) return alert("Entre un code barre.");
 
