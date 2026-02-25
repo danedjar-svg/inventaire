@@ -10,6 +10,7 @@
 //   CONFIG
 // ===============================
 const STORAGE_KEY = "inventaireProduits_v2";
+const LOGIN_KEY = "inventaire_logged_in";
 
 // ===============================
 //   STATE
@@ -136,6 +137,7 @@ function login() {
   const p = $("login_password").value.trim();
 
   if (u === "admin" && p === "1234") {
+    localStorage.setItem(LOGIN_KEY, "1");
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
     $("login_error").style.display = "none";
@@ -146,6 +148,7 @@ function login() {
 }
 
 function logout() {
+  localStorage.removeItem(LOGIN_KEY);
   $("login_section").style.display = "block";
   $("inventory_section").style.display = "none";
   $("login_username").value = "";
@@ -532,5 +535,13 @@ function deleteProductByInput() {
 
   $("delete_code").value = "";
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  if (localStorage.getItem(LOGIN_KEY) === "1") {
+    $("login_section").style.display = "none";
+    $("inventory_section").style.display = "block";
+    getData();
+  }
+});
 
 }
