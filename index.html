@@ -38,56 +38,71 @@
 
 <body>
 
+  <!-- =======================
+       LOGIN (Entrée = submit)
+       ======================= -->
   <div id="login_section">
-    <h2>Connexion</h2>
+    <form onsubmit="login(); return false;">
+      <h2>Connexion</h2>
 
-    <label>Nom d'utilisateur :</label>
-    <input type="text" id="login_username" />
+      <label>Nom d'utilisateur :</label>
+      <input type="text" id="login_username" />
 
-    <label>Mot de passe :</label>
-    <input type="password" id="login_password" />
+      <label>Mot de passe :</label>
+      <input type="password" id="login_password" />
 
-    <button onclick="login()">Se connecter</button>
+      <button type="submit">Se connecter</button>
 
-    <div id="login_error">Identifiants incorrects.</div>
+      <div id="login_error">Identifiants incorrects.</div>
+    </form>
   </div>
 
+  <!-- =======================
+       INVENTAIRE
+       ======================= -->
   <div id="inventory_section" style="display:none;">
     <div style="display:flex; justify-content:space-between;">
       <h2>Inventaire</h2>
-      <button onclick="logout()">Déconnexion</button>
+      <button type="button" onclick="logout()">Déconnexion</button>
     </div>
 
     <p id="affichage_stock">stock : 0</p>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <!-- Définir stock (Entrée = submit) -->
+    <form onsubmit="definirStock(); return false;" style="display:flex; gap:10px; flex-wrap:wrap;">
       <select id="productSelect">
         <option value="">-- Sélectionnez un produit --</option>
       </select>
 
       <input type="text" id="input_stock" placeholder="ex: 5, +5, -5" />
 
-      <button onclick="definirStock()">Définir</button>
-      <button onclick="stock()">+1</button>
-      <button onclick="retrait()">-1</button>
-    </div>
+      <button type="submit">Définir</button>
+      <button type="button" onclick="stock()">+1</button>
+      <button type="button" onclick="retrait()">-1</button>
+    </form>
 
     <hr>
 
+    <!-- Ajouter produit (Entrée = submit) -->
     <h3>Ajouter un produit</h3>
-    <input id="new_code" placeholder="Code barre">
-    <input id="new_nom" placeholder="Nom">
-    <input id="new_stock" type="number" value="0">
-    <input id="new_stock_min" type="number" value="0">
-    <input id="new_stock_max" type="number" value="0">
-    <button onclick="addProduct()">Ajouter</button>
+    <form onsubmit="addProduct(); return false;">
+      <input id="new_code" type="text" placeholder="Code barre">
+      <input id="new_nom" type="text" placeholder="Nom">
+      <input id="new_stock" type="number" value="0">
+      <input id="new_stock_min" type="number" value="0">
+      <input id="new_stock_max" type="number" value="0">
+      <button type="submit">Ajouter</button>
+    </form>
 
     <hr>
 
+    <!-- Supprimer produit (Entrée = submit) -->
     <h3>Supprimer un produit</h3>
-    <input id="delete_code" placeholder="Code barre (optionnel)">
-    <input id="delete_nom" placeholder="Nom du produit (optionnel)">
-    <button onclick="deleteProductByFields()">Supprimer</button>
+    <form onsubmit="deleteProductByFields(); return false;">
+      <input id="delete_code" type="text" placeholder="Code barre (optionnel)">
+      <input id="delete_nom" type="text" placeholder="Nom du produit (optionnel)">
+      <button type="submit">Supprimer</button>
+    </form>
 
     <hr>
 
