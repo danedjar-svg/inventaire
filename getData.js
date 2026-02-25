@@ -507,4 +507,19 @@ function addProduct() {
   $("new_stock").value = "0";
   $("new_stock_min").value = "0";
   $("new_stock_max").value = "0";
+
+function deleteProductByInput() {
+  const code = $("delete_code").value.trim();
+
+  if (!code) return alert("Entre un code barre.");
+
+  if (!produitsParCode[code]) {
+    return alert("Produit introuvable.");
+  }
+
+  deleteProduct(code);
+
+  $("delete_code").value = "";
+}
+
 }

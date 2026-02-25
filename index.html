@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Gestion des Stocks</title>
 
- <script src="getData.js?v=20260224-1" defer></script>
+  <script src="getData.js?v=20260225-1" defer></script>
 
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
@@ -81,6 +81,13 @@
     <input id="new_stock_min" type="number" value="0">
     <input id="new_stock_max" type="number" value="0">
     <button onclick="addProduct()">Ajouter</button>
+
+    <hr>
+
+    <h3>Supprimer un produit</h3>
+    <input id="delete_code" placeholder="Code barre (optionnel)">
+    <input id="delete_nom" placeholder="Nom du produit (optionnel)">
+    <button onclick="deleteProductByFields()">Supprimer</button>
 
     <hr>
 
