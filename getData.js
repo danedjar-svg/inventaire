@@ -1,9 +1,10 @@
 /* ============================================================
-   getData.js (VERSION COMPLETE)
+   getData.js (VERSION COMPLETE - CORRIGÉE)
    - Gestion stock (+1 / -1 / définir)
    - Couleurs (vert / orange / rouge)
    - Sauvegarde localStorage
-   - AJOUT : suppression d’un produit (persistante)
+   - Suppression d’un produit (persistante)
+   - Connexion persistante après rechargement
    ============================================================ */
 
 // ===============================
@@ -164,7 +165,7 @@ function logout() {
 }
 
 // ===============================
-//   SUPPRESSION PRODUIT (NOUVEAU)
+//   SUPPRESSION PRODUIT (persistante)
 // ===============================
 function deleteProduct(code) {
   const info = produitsParCode[code];
@@ -193,6 +194,39 @@ function deleteProduct(code) {
 
   // 5) Rebuild dropdown
   rebuildDropdown();
+}
+
+/**
+ * Appelé par le formulaire HTML "Supprimer un produit"
+ * (index.html utilise onsubmit="deleteProductByFields(); return false;")
+ */
+function deleteProductByFields() {
+  const code = $("delete_code").value.trim();
+  const nom = $("delete_nom").value.trim();
+
+  if (!code && !nom) {
+    return alert("Entre un code barre ou un nom.");
+  }
+
+  let codeTrouve = "";
+
+  if (code && produitsParCode[code]) {
+    codeTrouve = code;
+  } else if (nom) {
+    const entry = Object.entries(produitsParCode).find(
+      ([, info]) => (info.nom || "").toLowerCase() === nom.toLowerCase()
+    );
+    if (entry) codeTrouve = entry[0];
+  }
+
+  if (!codeTrouve) {
+    return alert("Produit introuvable.");
+  }
+
+  deleteProduct(codeTrouve);
+
+  $("delete_code").value = "";
+  $("delete_nom").value = "";
 }
 
 // ===============================
@@ -225,17 +259,17 @@ function ajouterCelluleActions(tr, codeBarre) {
   const inputLigne = document.createElement("input");
   inputLigne.type = "text";
   inputLigne.placeholder = "5, +5, -3";
-  inputLigne.addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
+  inputLigne.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
 
-    $("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    $("input_stock").value = inputLigne.value.trim();
-    definirStock();
-    inputLigne.value = "";
-  }
-});
+      $("productSelect").value = codeBarre;
+      setSelected(codeBarre);
+      $("input_stock").value = inputLigne.value.trim();
+      definirStock();
+      inputLigne.value = "";
+    }
+  });
 
   const btnOk = document.createElement("button");
   btnOk.textContent = "OK";
@@ -248,7 +282,6 @@ function ajouterCelluleActions(tr, codeBarre) {
     inputLigne.value = "";
   };
 
-  // ---- NOUVEAU : bouton Supprimer
   const btnDelete = document.createElement("button");
   btnDelete.textContent = "Supprimer";
   btnDelete.type = "button";
@@ -521,27 +554,15 @@ function addProduct() {
   $("new_stock").value = "0";
   $("new_stock_min").value = "0";
   $("new_stock_max").value = "0";
-
-function deleteProductByInput() {
-  const code = $("delete_code").value.trim(); 
-
-  if (!code) return alert("Entre un code barre.");
-
-  if (!produitsParCode[code]) {
-    return alert("Produit introuvable.");
-  }
-
-  deleteProduct(code);
-
-  $("delete_code").value = "";
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+// ===============================
+//   AUTO LOGIN AU RECHARGEMENT
+// ===============================
+document.addEventListener("DOMContentLoaded", function () {
   if (localStorage.getItem(LOGIN_KEY) === "1") {
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
     getData();
   }
 });
-
-}
