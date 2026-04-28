@@ -403,7 +403,7 @@ async function deleteProduct() {
 // ===============================
 //   SCANNER DOUCHETTE
 // ===============================
-ffunction handleBarcodeScan(event) {
+function handleBarcodeScan(event) {
   if (event.key !== "Enter") return;
 
   event.preventDefault();
