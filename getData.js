@@ -419,8 +419,30 @@ async function handleBarcodeScan(event) {
     $("delete_code").value = code;
     $("barcode_input").value = "";
     alert("Produit non trouvé. Le code a été mis dans Ajouter produit.");
+    return;
   }
 
+  $("productSelect").value = code;
+  setSelected(code);
+
+  const choix = prompt(
+    "Produit trouvé : " + produit.nom +
+    "\n\nTape 1 pour AJOUTER +1 au stock" +
+    "\nTape 2 pour RETIRER -1 du stock"
+  );
+
+  if (choix === "1") {
+    await stock();
+    $("barcode_result").textContent = "Ajout +1 : " + produit.nom;
+  } else if (choix === "2") {
+    await retrait();
+    $("barcode_result").textContent = "Retrait -1 : " + produit.nom;
+  } else {
+    $("barcode_result").textContent = "Action annulée.";
+  }
+
+  $("barcode_input").value = "";
+}
 // ===============================
 //   TEMPS RÉEL + INIT
 // ===============================
