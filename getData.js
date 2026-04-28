@@ -1,33 +1,19 @@
-/* ============================================================
-   getData.js (VERSION COMPLETE - CORRIGÉE)
-   - Gestion stock (+1 / -1 / définir)
-   - Couleurs (vert / orange / rouge)
-   - Sauvegarde localStorage
-   - Suppression d’un produit (persistante)
-   - Connexion persistante après rechargement
-   ============================================================ */
-
 // ===============================
 //   CONFIG
 // ===============================
-const STORAGE_KEY = "inventaireProduits_v2";
 const LOGIN_KEY = "inventaire_logged_in";
 
 // ===============================
 //   STATE
 // ===============================
-let produitsParCode = {}; // code -> { nom, row, stockCell }
+let produitsParCode = {};
 let selectedCode = "";
 
 // ===============================
 //   HELPERS
 // ===============================
 function $(id) {
-  const el = document.getElementById(id);
-  if (!el) {
-    throw new Error(`Élément introuvable: #${id} (id manquant dans index.html)`);
-  }
-  return el;
+  return document.getElementById(id);
 }
 
 function toNum(v, fallback = 0) {
@@ -36,7 +22,9 @@ function toNum(v, fallback = 0) {
 }
 
 function clearSelectionHighlight() {
-  Object.values(produitsParCode).forEach(p => p.row.classList.remove("status-selected"));
+  Object.values(produitsParCode).forEach(p => {
+    if (p.row) p.row.classList.remove("status-selected");
+  });
 }
 
 function setSelected(code) {
@@ -44,203 +32,96 @@ function setSelected(code) {
   clearSelectionHighlight();
 
   const info = produitsParCode[selectedCode];
+
   if (!selectedCode || !info) {
     $("affichage_stock").textContent = "stock : 0";
     return;
   }
 
   info.row.classList.add("status-selected");
-  const stockActuel = toNum(info.stockCell.textContent, 0);
-  $("affichage_stock").textContent = "stock : " + stockActuel;
+  $("affichage_stock").textContent = "stock : " + toNum(info.stockCell.textContent, 0);
 }
 
 // ===============================
-//   COULEURS / STATUT DE LIGNE
+//   COULEURS STOCK
 // ===============================
 function updateRowStatus(tr) {
-  if (!tr) return;
   const tds = tr.querySelectorAll("td");
-  // 0=code,1=nom,2=stock,3=min,4=max
   if (tds.length < 5) return;
 
   const stock = toNum(tds[2].textContent, 0);
-
-  const minTxt = (tds[3].textContent || "").trim();
-  const maxTxt = (tds[4].textContent || "").trim();
-
-  const stockMin = minTxt === "" ? NaN : toNum(minTxt, NaN);
-  const stockMax = maxTxt === "" ? NaN : toNum(maxTxt, NaN);
-
-  const hasMin = Number.isFinite(stockMin);
-  const hasMax = Number.isFinite(stockMax);
+  const stockMin = toNum(tds[3].textContent, 0);
+  const stockMax = toNum(tds[4].textContent, 0);
 
   tr.classList.remove("status-good", "status-warning", "status-danger");
 
-  // ROUGE : négatif OU sous min OU au-dessus max
-  const isDanger =
-    stock < 0 ||
-    (hasMin && stock < stockMin) ||
-    (hasMax && stock > stockMax);
-
-  // ORANGE : UNIQUEMENT à 1 de différence (sans être rouge)
-  const isWarning = !isDanger && (
-    (hasMin && stock === stockMin + 1) ||
-    (hasMax && stock === stockMax - 1)
-  );
-
-  tr.classList.add(isDanger ? "status-danger" : (isWarning ? "status-warning" : "status-good"));
-}
-
-function updateAllRowsStatus() {
-  Object.values(produitsParCode).forEach(p => updateRowStatus(p.row));
-}
-
-// ===============================
-//   LOCAL STORAGE
-// ===============================
-function loadSavedState() {
-  try {
-    const txt = localStorage.getItem(STORAGE_KEY);
-    return txt ? JSON.parse(txt) : {};
-  } catch {
-    return {};
+  if (stock < 0 || stock < stockMin || stock > stockMax) {
+    tr.classList.add("status-danger");
+  } else if (stock === stockMin + 1 || stock === stockMax - 1) {
+    tr.classList.add("status-warning");
+  } else {
+    tr.classList.add("status-good");
   }
 }
 
-/**
- * Sauvegarde l’état courant SANS effacer les suppressions.
- * (on repart de l’existant pour conserver les deleted:true)
- */
-function saveCurrentState() {
-  const previous = loadSavedState(); // conserve deleted:true
-  const state = { ...previous };
+// ===============================
+//   LOGIN SUPABASE
+// ===============================
+async function login() {
+  const email = $("login_email").value.trim();
+  const password = $("login_password").value.trim();
 
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const tds = info.row.querySelectorAll("td");
-    state[code] = {
-      code: tds[0].textContent,
-      nom: tds[1].textContent,
-      stock: toNum(tds[2].textContent, 0),
-      stockMin: tds[3].textContent,
-      stockMax: tds[4].textContent,
-      deleted: false
-    };
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-// ===============================
-//   LOGIN
-// ===============================
-function login() {
-  const u = $("login_username").value.trim();
-  const p = $("login_password").value.trim();
-
-  if (u === "admin" && p === "1234") {
-    localStorage.setItem(LOGIN_KEY, "1");
-    $("login_section").style.display = "none";
-    $("inventory_section").style.display = "block";
-    $("login_error").style.display = "none";
-    getData();
-  } else {
+  if (error) {
+    console.error(error);
     $("login_error").style.display = "block";
+    return;
   }
+
+  localStorage.setItem(LOGIN_KEY, "1");
+  $("login_section").style.display = "none";
+  $("inventory_section").style.display = "block";
+  $("login_error").style.display = "none";
+
+  getData();
 }
 
-function logout() {
+async function logout() {
+  await supabaseClient.auth.signOut();
+
   localStorage.removeItem(LOGIN_KEY);
   $("login_section").style.display = "block";
   $("inventory_section").style.display = "none";
-  $("login_username").value = "";
-  $("login_password").value = "";
-  $("login_error").style.display = "none";
-
-  $("product").innerHTML = "";
-  $("productSelect").innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  produitsParCode = {};
-  selectedCode = "";
-  $("affichage_stock").textContent = "stock : 0";
 }
 
 // ===============================
-//   SUPPRESSION PRODUIT (persistante)
+//   TABLEAU
 // ===============================
-function deleteProduct(code) {
-  const info = produitsParCode[code];
-  if (!info) return;
+function rebuildDropdown() {
+  const select = $("productSelect");
+  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
 
-  const ok = confirm(`Supprimer le produit "${info.nom}" (${code}) ?`);
-  if (!ok) return;
+  Object.entries(produitsParCode).forEach(([code, info]) => {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = info.nom;
+    select.appendChild(option);
+  });
 
-  // 1) Supprime la ligne du tableau
-  info.row.remove();
-
-  // 2) Supprime du state
-  delete produitsParCode[code];
-
-  // 3) Si c’était sélectionné
-  if (selectedCode === code) {
-    selectedCode = "";
-    $("productSelect").value = "";
-    $("affichage_stock").textContent = "stock : 0";
-  }
-
-  // 4) Enregistre la suppression (persistante)
-  const saved = loadSavedState();
-  saved[code] = { deleted: true };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-
-  // 5) Rebuild dropdown
-  rebuildDropdown();
+  select.onchange = function () {
+    setSelected(this.value);
+  };
 }
 
-/**
- * Appelé par le formulaire HTML "Supprimer un produit"
- * (index.html utilise onsubmit="deleteProductByFields(); return false;")
- */
-function deleteProductByFields() {
-  const code = $("delete_code").value.trim();
-  const nom = $("delete_nom").value.trim();
-
-  if (!code && !nom) {
-    return alert("Entre un code barre ou un nom.");
-  }
-
-  let codeTrouve = "";
-
-  if (code && produitsParCode[code]) {
-    codeTrouve = code;
-  } else if (nom) {
-    const entry = Object.entries(produitsParCode).find(
-      ([, info]) => (info.nom || "").toLowerCase() === nom.toLowerCase()
-    );
-    if (entry) codeTrouve = entry[0];
-  }
-
-  if (!codeTrouve) {
-    return alert("Produit introuvable.");
-  }
-
-  deleteProduct(codeTrouve);
-
-  $("delete_code").value = "";
-  $("delete_nom").value = "";
-}
-
-// ===============================
-//   TABLE BUILD
-// ===============================
 function ajouterCelluleActions(tr, codeBarre) {
-  const tdActions = document.createElement("td");
-
-  const wrap = document.createElement("div");
-  wrap.className = "row-actions";
+  const td = document.createElement("td");
 
   const btnPlus = document.createElement("button");
   btnPlus.textContent = "+";
-  btnPlus.type = "button";
   btnPlus.onclick = () => {
     $("productSelect").value = codeBarre;
     setSelected(codeBarre);
@@ -249,320 +130,324 @@ function ajouterCelluleActions(tr, codeBarre) {
 
   const btnMoins = document.createElement("button");
   btnMoins.textContent = "-";
-  btnMoins.type = "button";
   btnMoins.onclick = () => {
     $("productSelect").value = codeBarre;
     setSelected(codeBarre);
     retrait();
   };
 
-  const inputLigne = document.createElement("input");
-  inputLigne.type = "text";
-  inputLigne.placeholder = "5, +5, -3";
-  inputLigne.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-
-      $("productSelect").value = codeBarre;
-      setSelected(codeBarre);
-      $("input_stock").value = inputLigne.value.trim();
-      definirStock();
-      inputLigne.value = "";
-    }
-  });
-
-  const btnOk = document.createElement("button");
-  btnOk.textContent = "OK";
-  btnOk.type = "button";
-  btnOk.onclick = () => {
-    $("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    $("input_stock").value = inputLigne.value.trim();
-    definirStock();
-    inputLigne.value = "";
-  };
-
-  const btnDelete = document.createElement("button");
-  btnDelete.textContent = "Supprimer";
-  btnDelete.type = "button";
-  btnDelete.onclick = () => {
-    deleteProduct(codeBarre);
-  };
-
-  wrap.appendChild(btnPlus);
-  wrap.appendChild(btnMoins);
-  wrap.appendChild(inputLigne);
-  wrap.appendChild(btnOk);
-  wrap.appendChild(btnDelete);
-
-  tdActions.appendChild(wrap);
-  tr.appendChild(tdActions);
-}
-
-function rebuildDropdown() {
-  const select = $("productSelect");
-  const current = select.value;
-
-  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = info.nom || code;
-    select.appendChild(opt);
-  });
-
-  select.value = current;
+  td.appendChild(btnPlus);
+  td.appendChild(btnMoins);
+  tr.appendChild(td);
 }
 
 // ===============================
-//   LOAD CSV
+//   CHARGEMENT DONNÉES
 // ===============================
-function getData() {
-  fetch("Data.csv")
-    .then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.text();
-    })
-    .then(csv => {
-      produitsParCode = {};
-      selectedCode = "";
+async function getData() {
+  const { data, error } = await supabaseClient
+    .from("produit")
+    .select("*")
+    .order("nom", { ascending: true });
 
-      const productDiv = $("product");
-      productDiv.innerHTML = "";
+  if (error) {
+    console.error("Erreur Supabase :", error);
+    alert("Erreur Supabase : " + error.message);
+    return;
+  }
 
-      const lignes = csv.trim().split("\n").filter(l => l.trim() !== "");
-      if (lignes.length < 2) {
-        productDiv.textContent = "CSV vide ou invalide.";
-        return;
-      }
+  produitsParCode = {};
 
-      const entetes = lignes[0].split(",");
+  const productDiv = $("product");
+  productDiv.innerHTML = "";
 
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
+  if (!data || data.length === 0) {
+    productDiv.textContent = "Aucun produit dans Supabase.";
+    return;
+  }
 
-      const trHead = document.createElement("tr");
-      entetes.forEach(h => {
-        const th = document.createElement("th");
-        th.textContent = h;
-        trHead.appendChild(th);
-      });
-      const thActions = document.createElement("th");
-      thActions.textContent = "Actions";
-      trHead.appendChild(thActions);
-      thead.appendChild(trHead);
-      table.appendChild(thead);
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const tbody = document.createElement("tbody");
 
-      for (let i = 1; i < lignes.length; i++) {
-        const vals = lignes[i].split(",");
-        if (vals.length < 5) continue;
+  const trHead = document.createElement("tr");
+  ["Code barre", "Nom", "Stock", "Min", "Max", "Actions"].forEach(titre => {
+    const th = document.createElement("th");
+    th.textContent = titre;
+    trHead.appendChild(th);
+  });
 
-        const code = (vals[0] || "").trim();
-        const nom = (vals[1] || "").trim();
+  thead.appendChild(trHead);
+  table.appendChild(thead);
 
-        const tr = document.createElement("tr");
-        tr.dataset.codeBarre = code;
+  data.forEach(item => {
+    const code = String(item.code_barre).trim();
+    const nom = String(item.nom).trim();
 
-        vals.slice(0, 5).forEach((v, idx) => {
-          const td = document.createElement("td");
-          td.textContent = (v ?? "").trim();
-          if (idx === 2) td.classList.add("stockCell");
-          tr.appendChild(td);
-        });
+    const tr = document.createElement("tr");
 
-        ajouterCelluleActions(tr, code);
+    const valeurs = [
+      code,
+      nom,
+      item.stock ?? 0,
+      item.stock_min ?? 1,
+      item.stock_max ?? 7
+    ];
 
-        tr.addEventListener("click", (e) => {
-          if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT")) return;
-          $("productSelect").value = code;
-          setSelected(code);
-        });
-
-        tbody.appendChild(tr);
-
-        produitsParCode[code] = {
-          nom,
-          row: tr,
-          stockCell: tr.querySelector(".stockCell")
-        };
-
-        updateRowStatus(tr);
-      }
-
-      table.appendChild(tbody);
-      productDiv.appendChild(table);
-
-      // Applique sauvegarde locale (si existe)
-      const saved = loadSavedState();
-      Object.keys(saved).forEach(code => {
-        const data = saved[code];
-        if (!data || data.deleted) return;
-
-        const info = produitsParCode[code];
-        if (!info) return;
-
-        const tds = info.row.querySelectorAll("td");
-        tds[1].textContent = data.nom;
-        tds[2].textContent = data.stock;
-        tds[3].textContent = data.stockMin;
-        tds[4].textContent = data.stockMax;
-        info.nom = data.nom;
-
-        updateRowStatus(info.row);
-      });
-
-      // Retire du tableau les produits supprimés (deleted:true)
-      Object.keys(saved).forEach(code => {
-        const data = saved[code];
-        if (!data || !data.deleted) return;
-
-        const info = produitsParCode[code];
-        if (!info) return;
-
-        info.row.remove();
-        delete produitsParCode[code];
-      });
-
-      rebuildDropdown();
-
-      $("productSelect").onchange = function () {
-        setSelected(this.value);
-      };
-
-      setSelected("");
-      updateAllRowsStatus();
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Impossible de charger Data.csv (mets Data.csv au même endroit que index.html).");
+    valeurs.forEach((valeur, index) => {
+      const td = document.createElement("td");
+      td.textContent = valeur;
+      if (index === 2) td.classList.add("stockCell");
+      tr.appendChild(td);
     });
+
+    ajouterCelluleActions(tr, code);
+
+    tr.onclick = function (e) {
+      if (e.target.tagName === "BUTTON") return;
+      $("productSelect").value = code;
+      setSelected(code);
+    };
+
+    tbody.appendChild(tr);
+
+    produitsParCode[code] = {
+      nom,
+      row: tr,
+      stockCell: tr.querySelector(".stockCell")
+    };
+
+    updateRowStatus(tr);
+  });
+
+  table.appendChild(tbody);
+  productDiv.appendChild(table);
+
+  rebuildDropdown();
 }
 
 // ===============================
 //   ACTIONS STOCK
 // ===============================
-function stock() {
+async function stock() {
   const code = $("productSelect").value;
   const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
 
-  const s = toNum(info.stockCell.textContent, 0) + 1;
-  info.stockCell.textContent = s;
-
-  $("affichage_stock").textContent = "stock : " + s;
-
-  updateRowStatus(info.row);
-  saveCurrentState();
-}
-
-function retrait() {
-  const code = $("productSelect").value;
-  const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
-
-  const s = toNum(info.stockCell.textContent, 0) - 1;
-  info.stockCell.textContent = s;
-
-  $("affichage_stock").textContent = "stock : " + s;
-
-  updateRowStatus(info.row);
-  saveCurrentState();
-}
-
-function definirStock() {
-  const code = $("productSelect").value;
-  const info = produitsParCode[code];
-  if (!code || !info) return alert("Choisis un produit.");
-
-  const saisie = $("input_stock").value.trim();
-  if (!saisie) return alert("Entre un nombre (ex: 5, +5, -5).");
-
-  const actuel = toNum(info.stockCell.textContent, 0);
-  let nouveau;
-
-  if (saisie.startsWith("+")) {
-    nouveau = actuel + toNum(saisie.slice(1), NaN);
-  } else if (saisie.startsWith("-")) {
-    nouveau = actuel - toNum(saisie.slice(1), NaN);
-  } else {
-    nouveau = toNum(saisie, NaN);
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
   }
 
-  if (!Number.isFinite(nouveau)) return alert("Saisie invalide.");
+  const nouveauStock = toNum(info.stockCell.textContent, 0) + 1;
 
-  info.stockCell.textContent = nouveau;
-  $("affichage_stock").textContent = "stock : " + nouveau;
+  const { error } = await supabaseClient
+    .from("produit")
+    .update({ stock: nouveauStock })
+    .eq("code_barre", code);
+
+  if (error) {
+    alert("Erreur mise à jour stock.");
+    console.error(error);
+    return;
+  }
+
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
+}
+
+async function retrait() {
+  const code = $("productSelect").value;
+  const info = produitsParCode[code];
+
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
+  }
+
+  const nouveauStock = toNum(info.stockCell.textContent, 0) - 1;
+
+  const { error } = await supabaseClient
+    .from("produit")
+    .update({ stock: nouveauStock })
+    .eq("code_barre", code);
+
+  if (error) {
+    alert("Erreur mise à jour stock.");
+    console.error(error);
+    return;
+  }
+
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
+}
+
+async function definirStock() {
+  const code = $("productSelect").value;
+  const info = produitsParCode[code];
+
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
+  }
+
+  const saisie = $("input_stock").value.trim();
+  const actuel = toNum(info.stockCell.textContent, 0);
+  let nouveauStock;
+
+  if (saisie.startsWith("+")) {
+    nouveauStock = actuel + toNum(saisie.slice(1), NaN);
+  } else if (saisie.startsWith("-")) {
+    nouveauStock = actuel - toNum(saisie.slice(1), NaN);
+  } else {
+    nouveauStock = toNum(saisie, NaN);
+  }
+
+  if (!Number.isFinite(nouveauStock)) {
+    alert("Saisie invalide.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("produit")
+    .update({ stock: nouveauStock })
+    .eq("code_barre", code);
+
+  if (error) {
+    alert("Erreur mise à jour stock.");
+    console.error(error);
+    return;
+  }
+
   $("input_stock").value = "";
 
-  updateRowStatus(info.row);
-  saveCurrentState();
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
 }
 
 // ===============================
 //   AJOUT PRODUIT
 // ===============================
-function addProduct() {
+async function addProduct() {
   const code = $("new_code").value.trim();
   const nom = $("new_nom").value.trim();
-  const stockInit = toNum($("new_stock").value, 0);
-  const min = toNum($("new_stock_min").value, 0);
-  const max = toNum($("new_stock_max").value, 0);
 
-  if (!code || !nom) return alert("Code barre et nom obligatoires.");
-  if (produitsParCode[code]) return alert("Ce code existe déjà.");
+  if (!code || !nom) {
+    alert("Code barre et nom obligatoires.");
+    return;
+  }
 
-  const table = document.querySelector("#product table");
-  if (!table) return alert("Tableau non chargé (Data.csv introuvable ?)");
+  const { error } = await supabaseClient
+    .from("produit")
+    .insert([{
+      code_barre: code,
+      nom: nom,
+      stock: toNum($("new_stock").value, 0),
+      stock_min: toNum($("new_stock_min").value, 1),
+      stock_max: toNum($("new_stock_max").value, 7)
+    }]);
 
-  const tbody = table.querySelector("tbody");
-
-  const tr = document.createElement("tr");
-  tr.dataset.codeBarre = code;
-
-  const vals = [code, nom, stockInit, min, max];
-  vals.forEach((v, idx) => {
-    const td = document.createElement("td");
-    td.textContent = v;
-    if (idx === 2) td.classList.add("stockCell");
-    tr.appendChild(td);
-  });
-
-  ajouterCelluleActions(tr, code);
-
-  tr.addEventListener("click", (e) => {
-    if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT")) return;
-    $("productSelect").value = code;
-    setSelected(code);
-  });
-
-  tbody.appendChild(tr);
-
-  produitsParCode[code] = {
-    nom,
-    row: tr,
-    stockCell: tr.querySelector(".stockCell")
-  };
-
-  updateRowStatus(tr);
-  rebuildDropdown();
-  saveCurrentState();
+  if (error) {
+    alert("Erreur ajout produit : " + error.message);
+    console.error(error);
+    return;
+  }
 
   $("new_code").value = "";
   $("new_nom").value = "";
   $("new_stock").value = "0";
-  $("new_stock_min").value = "0";
-  $("new_stock_max").value = "0";
+  $("new_stock_min").value = "1";
+  $("new_stock_max").value = "7";
+
+  await getData();
 }
 
 // ===============================
-//   AUTO LOGIN AU RECHARGEMENT
+//   SUPPRESSION PRODUIT
 // ===============================
-document.addEventListener("DOMContentLoaded", function () {
-  if (localStorage.getItem(LOGIN_KEY) === "1") {
+async function deleteProduct() {
+  const code = $("delete_code").value.trim();
+
+  if (!code) {
+    alert("Scanne ou entre un code barre à supprimer.");
+    return;
+  }
+
+  const produit = produitsParCode[code];
+
+  if (!produit) {
+    alert("Produit introuvable.");
+    return;
+  }
+
+  const confirmation = confirm("Supprimer le produit : " + produit.nom + " ?");
+  if (!confirmation) return;
+
+  const { error } = await supabaseClient
+    .from("produit")
+    .delete()
+    .eq("code_barre", code);
+
+  if (error) {
+    alert("Erreur suppression produit.");
+    console.error(error);
+    return;
+  }
+
+  $("delete_code").value = "";
+  await getData();
+}
+
+// ===============================
+//   SCANNER DOUCHETTE
+// ===============================
+function handleBarcodeScan(event) {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+
+  const code = $("barcode_input").value.trim();
+  if (!code) return;
+
+  const produit = produitsParCode[code];
+
+  if (produit) {
+    $("productSelect").value = code;
+    setSelected(code);
+
+    $("barcode_result").textContent = "Produit trouvé : " + produit.nom;
+  } else {
+    $("barcode_result").textContent = "Produit non trouvé : " + code;
+
+    $("new_code").value = code;
+    $("delete_code").value = code;
+  }
+
+  $("barcode_input").value = "";
+}
+
+// ===============================
+//   TEMPS RÉEL + INIT
+// ===============================
+document.addEventListener("DOMContentLoaded", async function () {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session || localStorage.getItem(LOGIN_KEY) === "1") {
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
     getData();
   }
+
+  supabaseClient
+    .channel("realtime-produit")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "produit" },
+      () => {
+        getData();
+      }
+    )
+    .subscribe();
 });

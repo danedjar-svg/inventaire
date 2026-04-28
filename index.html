@@ -1,113 +1,124 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Gestion des Stocks</title>
+  <meta charset="UTF-8">
+  <title>Gestion de stock</title>
 
-  <script src="getData.js?v=20260225-2" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="getData.js" defer></script>
 
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial; margin: 20px; }
 
-    #login_section, #inventory_section {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
+    input, button, select {
+      padding: 6px;
+      margin: 5px;
     }
 
-    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-    th, td { border: 1px solid #999; padding: 6px; text-align: center; }
-    th { background: #f0f0f0; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
 
-    button { padding: 6px 10px; margin: 2px; cursor: pointer; }
-    input[type="text"], input[type="number"], input[type="password"] { padding: 6px; }
+    td, th {
+      border: 1px solid black;
+      padding: 6px;
+      text-align: center;
+    }
 
-    #login_error { color: red; display: none; margin-top: 8px; }
-
-    .row-actions { display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap; }
-    .row-actions input { width: 90px; }
-
-    tr.status-good    { background-color: #d9f7d9; }
+    /* COULEURS */
+    tr.status-good { background-color: #d9f7d9; }
     tr.status-warning { background-color: #ffe8b3; }
-    tr.status-danger  { background-color: #ffd0d0; }
+    tr.status-danger { background-color: #ffd0d0; }
 
-    tr.status-selected { box-shadow: inset 0 0 0 2px #3aa0ff; }
+    tr.status-selected {
+      box-shadow: inset 0 0 0 2px #3aa0ff;
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- =======================
-       LOGIN (Entrée = submit)
-       ======================= -->
-  <div id="login_section">
-    <form onsubmit="login(); return false;">
-      <h2>Connexion</h2>
+<!-- LOGIN -->
+<div id="login_section">
+  <h2>Connexion</h2>
 
-      <label>Nom d'utilisateur :</label>
-      <input type="text" id="login_username" />
+  <input id="login_email" type="email" placeholder="Email">
+  <input id="login_password" type="password" placeholder="Mot de passe">
+  <button onclick="login()">Connexion</button>
 
-      <label>Mot de passe :</label>
-      <input type="password" id="login_password" />
+  <p id="login_error" style="color:red; display:none;">Erreur login</p>
+</div>
 
-      <button type="submit">Se connecter</button>
+<!-- APP -->
+<div id="inventory_section" style="display:none;">
 
-      <div id="login_error">Identifiants incorrects.</div>
-    </form>
-  </div>
+  <h2>Inventaire</h2>
+  <button onclick="logout()">Déconnexion</button>
 
-  <!-- =======================
-       INVENTAIRE
-       ======================= -->
-  <div id="inventory_section" style="display:none;">
-    <div style="display:flex; justify-content:space-between;">
-      <h2>Inventaire</h2>
-      <button type="button" onclick="logout()">Déconnexion</button>
-    </div>
+  <p id="affichage_stock">stock : 0</p>
 
-    <p id="affichage_stock">stock : 0</p>
+  <!-- SCANNER DOUCHETTE -->
+  <h3>Scanner code-barres</h3>
 
-    <!-- Définir stock (Entrée = submit) -->
-    <form onsubmit="definirStock(); return false;" style="display:flex; gap:10px; flex-wrap:wrap;">
-      <select id="productSelect">
-        <option value="">-- Sélectionnez un produit --</option>
-      </select>
+  <input 
+    type="text" 
+    id="barcode_input"
+    placeholder="Scanner ici"
+    onkeydown="handleBarcodeScan(event)"
+    autofocus
+    style="width:300px; font-size:16px;"
+  >
 
-      <input type="text" id="input_stock" placeholder="ex: 5, +5, -5" />
+  <p id="barcode_result">Aucun scan</p>
 
-      <button type="submit">Définir</button>
-      <button type="button" onclick="stock()">+1</button>
-      <button type="button" onclick="retrait()">-1</button>
-    </form>
+  <hr>
 
-    <hr>
+  <!-- ACTIONS -->
+  <select id="productSelect"></select>
 
-    <!-- Ajouter produit (Entrée = submit) -->
-    <h3>Ajouter un produit</h3>
-    <form onsubmit="addProduct(); return false;">
-      <input id="new_code" type="text" placeholder="Code barre">
-      <input id="new_nom" type="text" placeholder="Nom">
-      <input id="new_stock" type="number" value="0">
-      <input id="new_stock_min" type="number" value="0">
-      <input id="new_stock_max" type="number" value="0">
-      <button type="submit">Ajouter</button>
-    </form>
+  <input type="text" id="input_stock" placeholder="+5, -3, 10">
+  <button onclick="definirStock()">Définir</button>
 
-    <hr>
+  <button onclick="stock()">+1</button>
+  <button onclick="retrait()">-1</button>
 
-    <!-- Supprimer produit (Entrée = submit) -->
-    <h3>Supprimer un produit</h3>
-    <form onsubmit="deleteProductByFields(); return false;">
-      <input id="delete_code" type="text" placeholder="Code barre (optionnel)">
-      <input id="delete_nom" type="text" placeholder="Nom du produit (optionnel)">
-      <button type="submit">Supprimer</button>
-    </form>
+  <hr>
 
-    <hr>
+  <!-- AJOUT PRODUIT -->
+  <h3>Ajouter produit</h3>
 
-    <div id="product"></div>
-  </div>
+  <input id="new_code" placeholder="Code barre">
+  <input id="new_nom" placeholder="Nom">
+  <input id="new_stock" type="number" value="0">
+  <input id="new_stock_min" type="number" value="1">
+  <input id="new_stock_max" type="number" value="7">
+
+  <button onclick="addProduct()">Ajouter</button>
+
+  <hr>
+
+  <!-- SUPPRESSION -->
+  <h3>Supprimer produit</h3>
+
+  <input id="delete_code" placeholder="Code barre">
+  <button onclick="deleteProduct()">Supprimer</button>
+
+  <hr>
+
+  <!-- TABLE -->
+  <div id="product"></div>
+
+</div>
+
+<!-- CONFIG SUPABASE -->
+<script>
+  const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
 
 </body>
 </html>
