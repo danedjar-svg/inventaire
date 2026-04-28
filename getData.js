@@ -403,7 +403,7 @@ async function deleteProduct() {
 // ===============================
 //   SCANNER DOUCHETTE
 // ===============================
-function handleBarcodeScan(event) {
+ffunction handleBarcodeScan(event) {
   if (event.key !== "Enter") return;
 
   event.preventDefault();
@@ -417,12 +417,27 @@ function handleBarcodeScan(event) {
     $("productSelect").value = code;
     setSelected(code);
 
-    $("barcode_result").textContent = "Produit trouvé : " + produit.nom;
+    const ajouter = confirm(
+      "Produit trouvé : " + produit.nom +
+      "\n\nOK = Ajouter +1 au stock" +
+      "\nAnnuler = Retirer -1 du stock"
+    );
+
+    if (ajouter) {
+      stock();
+      $("barcode_result").textContent = "Ajout +1 : " + produit.nom;
+    } else {
+      retrait();
+      $("barcode_result").textContent = "Retrait -1 : " + produit.nom;
+    }
+
   } else {
     $("barcode_result").textContent = "Produit non trouvé : " + code;
 
     $("new_code").value = code;
     $("delete_code").value = code;
+
+    alert("Produit non trouvé. Le code a été placé dans Ajouter produit.");
   }
 
   $("barcode_input").value = "";
