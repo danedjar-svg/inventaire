@@ -1,10 +1,19 @@
+// ===============================
+//   CONFIG
+// ===============================
 const LOGIN_KEY = "inventaire_logged_in";
 
+// ===============================
+//   STATE
+// ===============================
 let produitsParCode = {};
 let selectedCode = "";
 let allProductsData = [];
 let stockFilterMode = "all"; // all | hide0 | only0
 
+// ===============================
+//   NORMALISATION CODE BARRE
+// ===============================
 function normalizeCode(code) {
   return String(code)
     .trim()
@@ -16,6 +25,9 @@ function normalizeCode(code) {
     .replace(/\./g, "");
 }
 
+// ===============================
+//   HELPERS
+// ===============================
 function $(id) {
   return document.getElementById(id);
 }
@@ -25,6 +37,9 @@ function toNum(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+// ===============================
+//   SELECTION
+// ===============================
 function clearSelectionHighlight() {
   Object.values(produitsParCode).forEach(p => {
     if (p.row) p.row.classList.remove("status-selected");
@@ -32,7 +47,7 @@ function clearSelectionHighlight() {
 }
 
 function setSelected(code) {
-  selectedCode = code || "";
+  selectedCode = normalizeCode(code || "");
   clearSelectionHighlight();
 
   const info = produitsParCode[selectedCode];
@@ -47,6 +62,9 @@ function setSelected(code) {
     "stock : " + toNum(info.stockCell.textContent, 0);
 }
 
+// ===============================
+//   COULEURS STOCK
+// ===============================
 function updateRowStatus(tr) {
   const tds = tr.querySelectorAll("td");
   if (tds.length < 5) return;
@@ -66,6 +84,9 @@ function updateRowStatus(tr) {
   }
 }
 
+// ===============================
+//   LOGIN
+// ===============================
 async function login() {
   const email = $("login_email").value.trim();
   const password = $("login_password").value.trim();
@@ -83,6 +104,7 @@ async function login() {
   localStorage.setItem(LOGIN_KEY, "1");
   $("login_section").style.display = "none";
   $("inventory_section").style.display = "block";
+  $("login_error").style.display = "none";
 
   getData();
 }
@@ -95,6 +117,9 @@ async function logout() {
   $("inventory_section").style.display = "none";
 }
 
+// ===============================
+//   MENU DEROULANT PRODUITS
+// ===============================
 function rebuildDropdown() {
   const select = $("productSelect");
   select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
@@ -111,11 +136,15 @@ function rebuildDropdown() {
   };
 }
 
+// ===============================
+//   BOUTONS ACTIONS TABLEAU
+// ===============================
 function ajouterCelluleActions(tr, codeBarre) {
   const td = document.createElement("td");
 
   const btnPlus = document.createElement("button");
   btnPlus.textContent = "+";
+  btnPlus.type = "button";
   btnPlus.onclick = () => {
     $("productSelect").value = codeBarre;
     setSelected(codeBarre);
@@ -124,6 +153,7 @@ function ajouterCelluleActions(tr, codeBarre) {
 
   const btnMoins = document.createElement("button");
   btnMoins.textContent = "-";
+  btnMoins.type = "button";
   btnMoins.onclick = () => {
     $("productSelect").value = codeBarre;
     setSelected(codeBarre);
@@ -135,6 +165,9 @@ function ajouterCelluleActions(tr, codeBarre) {
   tr.appendChild(td);
 }
 
+// ===============================
+//   CHARGEMENT DONNEES SUPABASE
+// ===============================
 async function getData() {
   const { data, error } = await supabaseClient
     .from("produit")
@@ -142,7 +175,8 @@ async function getData() {
     .order("nom", { ascending: true });
 
   if (error) {
-    alert("Erreur Supabase");
+    console.error("Erreur Supabase :", error);
+    alert("Erreur Supabase : " + error.message);
     return;
   }
 
@@ -150,22 +184,26 @@ async function getData() {
   applyFilters();
 }
 
+// ===============================
+//   FILTRE STOCK TYPE EXCEL
+// ===============================
 function applyFilters() {
   let filteredData = [...allProductsData];
 
-  const hideZero = $("hide_zero_stock") && $("hide_zero_stock").checked;
-
-  if (hideZero) {
+  if (stockFilterMode === "hide0") {
     filteredData = filteredData.filter(item => toNum(item.stock, 0) !== 0);
-    $("filter_result").textContent =
-      filteredData.length + " article(s) affiché(s), stock à 0 masqué.";
-  } else {
-    $("filter_result").textContent = "Tous les articles sont affichés.";
+  }
+
+  if (stockFilterMode === "only0") {
+    filteredData = filteredData.filter(item => toNum(item.stock, 0) === 0);
   }
 
   renderTable(filteredData);
 }
 
+// ===============================
+//   AFFICHAGE TABLEAU
+// ===============================
 function renderTable(data) {
   produitsParCode = {};
   $("product").innerHTML = "";
@@ -176,19 +214,22 @@ function renderTable(data) {
 
   const trHead = document.createElement("tr");
 
-  // Colonnes
-  ["Code barre", "Nom"].forEach(titre => {
-    const th = document.createElement("th");
-    th.textContent = titre;
-    trHead.appendChild(th);
-  });
+  // Code barre
+  const thCode = document.createElement("th");
+  thCode.textContent = "Code barre";
+  trHead.appendChild(thCode);
 
-  // 🔥 COLONNE STOCK AVEC FILTRE
+  // Nom
+  const thNom = document.createElement("th");
+  thNom.textContent = "Nom";
+  trHead.appendChild(thNom);
+
+  // Stock avec filtre
   const thStock = document.createElement("th");
-
   const selectFilter = document.createElement("select");
+
   selectFilter.innerHTML = `
-    <option value="all">Stock (Tous)</option>
+    <option value="all">Stock : Tous</option>
     <option value="hide0">Masquer stock 0</option>
     <option value="only0">Seulement stock 0</option>
   `;
@@ -203,44 +244,54 @@ function renderTable(data) {
   thStock.appendChild(selectFilter);
   trHead.appendChild(thStock);
 
-  ["Min", "Max", "Actions"].forEach(titre => {
-    const th = document.createElement("th");
-    th.textContent = titre;
-    trHead.appendChild(th);
-  });
+  // Min
+  const thMin = document.createElement("th");
+  thMin.textContent = "Min";
+  trHead.appendChild(thMin);
+
+  // Max
+  const thMax = document.createElement("th");
+  thMax.textContent = "Max";
+  trHead.appendChild(thMax);
+
+  // Actions
+  const thActions = document.createElement("th");
+  thActions.textContent = "Actions";
+  trHead.appendChild(thActions);
 
   thead.appendChild(trHead);
   table.appendChild(thead);
 
-  // 🔥 FILTRAGE
-  let filteredData = data;
-
-  if (stockFilterMode === "hide0") {
-    filteredData = data.filter(item => toNum(item.stock, 0) !== 0);
-  }
-
-  if (stockFilterMode === "only0") {
-    filteredData = data.filter(item => toNum(item.stock, 0) === 0);
-  }
-
-  // Lignes
-  filteredData.forEach(item => {
+  data.forEach(item => {
     const code = normalizeCode(item.code_barre);
-    const nom = item.nom;
+    const nom = item.nom || "";
 
     const tr = document.createElement("tr");
 
-    [code, nom, item.stock, item.stock_min, item.stock_max].forEach((val, i) => {
+    const valeurs = [
+      code,
+      nom,
+      item.stock ?? 0,
+      item.stock_min ?? 1,
+      item.stock_max ?? 7
+    ];
+
+    valeurs.forEach((val, index) => {
       const td = document.createElement("td");
       td.textContent = val;
-      if (i === 2) td.classList.add("stockCell");
+
+      if (index === 2) {
+        td.classList.add("stockCell");
+      }
+
       tr.appendChild(td);
     });
 
     ajouterCelluleActions(tr, code);
 
     tr.onclick = function (event) {
-      if (event.target.tagName === "BUTTON") return;
+      if (event.target.tagName === "BUTTON" || event.target.tagName === "SELECT") return;
+
       $("productSelect").value = code;
       setSelected(code);
     };
@@ -262,76 +313,173 @@ function renderTable(data) {
   rebuildDropdown();
 }
 
+// ===============================
+//   ACTIONS STOCK
+// ===============================
 async function stock() {
   const code = normalizeCode($("productSelect").value);
   const info = produitsParCode[code];
 
-  if (!info) return alert("Choisis un produit.");
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
+  }
 
-  const nouveau = toNum(info.stockCell.textContent) + 1;
+  const nouveau = toNum(info.stockCell.textContent, 0) + 1;
 
-  await supabaseClient
+  const { error } = await supabaseClient
     .from("produit")
     .update({ stock: nouveau })
     .eq("code_barre", code);
 
-  getData();
+  if (error) {
+    console.error(error);
+    alert("Erreur mise à jour stock.");
+    return;
+  }
+
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
 }
 
 async function retrait() {
   const code = normalizeCode($("productSelect").value);
   const info = produitsParCode[code];
 
-  if (!info) return alert("Choisis un produit.");
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
+  }
 
-  const nouveau = toNum(info.stockCell.textContent) - 1;
+  const nouveau = toNum(info.stockCell.textContent, 0) - 1;
 
-  await supabaseClient
+  const { error } = await supabaseClient
     .from("produit")
     .update({ stock: nouveau })
     .eq("code_barre", code);
 
-  getData();
+  if (error) {
+    console.error(error);
+    alert("Erreur mise à jour stock.");
+    return;
+  }
+
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
 }
 
 async function definirStock() {
   const code = normalizeCode($("productSelect").value);
-  const valeur = toNum($("input_stock").value);
+  const info = produitsParCode[code];
 
-  await supabaseClient
+  if (!code || !info) {
+    alert("Choisis un produit.");
+    return;
+  }
+
+  const saisie = $("input_stock").value.trim();
+  const actuel = toNum(info.stockCell.textContent, 0);
+  let nouveau;
+
+  if (saisie.startsWith("+")) {
+    nouveau = actuel + toNum(saisie.slice(1), NaN);
+  } else if (saisie.startsWith("-")) {
+    nouveau = actuel - toNum(saisie.slice(1), NaN);
+  } else {
+    nouveau = toNum(saisie, NaN);
+  }
+
+  if (!Number.isFinite(nouveau)) {
+    alert("Saisie invalide.");
+    return;
+  }
+
+  const { error } = await supabaseClient
     .from("produit")
-    .update({ stock: valeur })
+    .update({ stock: nouveau })
     .eq("code_barre", code);
 
-  getData();
+  if (error) {
+    console.error(error);
+    alert("Erreur mise à jour stock.");
+    return;
+  }
+
+  $("input_stock").value = "";
+  await getData();
+  $("productSelect").value = code;
+  setSelected(code);
 }
 
+// ===============================
+//   AJOUT PRODUIT
+// ===============================
 async function addProduct() {
   const code = normalizeCode($("new_code").value);
-  const nom = $("new_nom").value;
+  const nom = $("new_nom").value.trim();
 
-  await supabaseClient.from("produit").insert([{
+  if (!code || !nom) {
+    alert("Code barre et nom obligatoires.");
+    return;
+  }
+
+  const { error } = await supabaseClient.from("produit").insert([{
     code_barre: code,
     nom,
-    stock: toNum($("new_stock").value),
-    stock_min: toNum($("new_stock_min").value),
-    stock_max: toNum($("new_stock_max").value)
+    stock: toNum($("new_stock").value, 0),
+    stock_min: toNum($("new_stock_min").value, 1),
+    stock_max: toNum($("new_stock_max").value, 7)
   }]);
 
-  getData();
+  if (error) {
+    console.error(error);
+    alert("Erreur ajout produit : " + error.message);
+    return;
+  }
+
+  $("new_code").value = "";
+  $("new_nom").value = "";
+  $("new_stock").value = "0";
+  $("new_stock_min").value = "1";
+  $("new_stock_max").value = "7";
+
+  await getData();
 }
 
+// ===============================
+//   SUPPRESSION PRODUIT
+// ===============================
 async function deleteProduct() {
   const code = normalizeCode($("delete_code").value);
 
-  await supabaseClient
+  if (!code) {
+    alert("Scanne ou entre un code barre à supprimer.");
+    return;
+  }
+
+  const confirmation = confirm("Supprimer le produit : " + code + " ?");
+  if (!confirmation) return;
+
+  const { error } = await supabaseClient
     .from("produit")
     .delete()
     .eq("code_barre", code);
 
-  getData();
+  if (error) {
+    console.error(error);
+    alert("Erreur suppression produit.");
+    return;
+  }
+
+  $("delete_code").value = "";
+  await getData();
 }
 
+// ===============================
+//   SCANNER DOUCHETTE
+// ===============================
 async function handleBarcodeScan(event) {
   if (event.key !== "Enter") return;
 
@@ -345,6 +493,7 @@ async function handleBarcodeScan(event) {
   if (!produit) {
     $("barcode_result").textContent = "Produit non trouvé : " + code;
     $("new_code").value = code;
+    $("delete_code").value = code;
     return;
   }
 
@@ -353,15 +502,26 @@ async function handleBarcodeScan(event) {
 
   const choix = prompt(
     "Produit : " + produit.nom +
-    "\n1 = Ajouter\n2 = Retirer"
+    "\n\n1 = Ajouter +1 au stock" +
+    "\n2 = Retirer -1 du stock"
   );
 
-  if (choix === "1") await stock();
-  else if (choix === "2") await retrait();
+  if (choix === "1") {
+    await stock();
+    $("barcode_result").textContent = "Ajout +1 : " + produit.nom;
+  } else if (choix === "2") {
+    await retrait();
+    $("barcode_result").textContent = "Retrait -1 : " + produit.nom;
+  } else {
+    $("barcode_result").textContent = "Action annulée.";
+  }
 
   $("barcode_input").value = "";
 }
 
+// ===============================
+//   NETTOYAGE AUTO DES CHAMPS CODE
+// ===============================
 document.addEventListener("input", function (event) {
   if (
     event.target.id === "barcode_input" ||
@@ -375,6 +535,9 @@ document.addEventListener("input", function (event) {
   }
 });
 
+// ===============================
+//   INIT + TEMPS REEL
+// ===============================
 document.addEventListener("DOMContentLoaded", async function () {
   const { data } = await supabaseClient.auth.getSession();
 
@@ -385,7 +548,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   supabaseClient
-    .channel("realtime")
+    .channel("realtime-produit")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "produit" },
