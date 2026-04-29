@@ -10,9 +10,9 @@ function normalizeCode(code) {
   return String(code)
     .trim()
     .toUpperCase()
-    .replaceAll("R2N", "")
-    .replaceAll(".LC", "")
-    .replaceAll("LC", "")
+    .replace(/R2N/g, "")
+    .replace(/\.LC/g, "")
+    .replace(/LC/g, "")
     .replace(/\s/g, "")
     .replace(/\./g, "");
 }
@@ -328,4 +328,18 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     )
     .subscribe();
+});
+
+// Nettoyage automatique visible dans les champs code-barres
+document.addEventListener("input", function (event) {
+  if (
+    event.target.id === "barcode_input" ||
+    event.target.id === "new_code" ||
+    event.target.id === "delete_code"
+  ) {
+    const cleaned = normalizeCode(event.target.value);
+    if (event.target.value !== cleaned) {
+      event.target.value = cleaned;
+    }
+  }
 });
