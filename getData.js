@@ -9,9 +9,12 @@ const LOGIN_KEY = "inventaire_logged_in";
 function normalizeCode(code) {
   return String(code)
     .trim()
-    .replace(/^R2N/, "")
-    .replace(/\.LC$/, "")
-    .replace(/\s/g, "");
+    .toUpperCase()
+    .replaceAll("R2N", "")
+    .replaceAll(".LC", "")
+    .replaceAll("LC", "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "");
 }
 
 // ===============================
@@ -50,7 +53,8 @@ function setSelected(code) {
   }
 
   info.row.classList.add("status-selected");
-  $("affichage_stock").textContent = "stock : " + toNum(info.stockCell.textContent, 0);
+  $("affichage_stock").textContent =
+    "stock : " + toNum(info.stockCell.textContent, 0);
 }
 
 // ===============================
@@ -112,7 +116,8 @@ async function logout() {
 // ===============================
 function rebuildDropdown() {
   const select = $("productSelect");
-  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+  select.innerHTML =
+    '<option value="">-- Sélectionnez un produit --</option>';
 
   Object.entries(produitsParCode).forEach(([code, info]) => {
     const option = document.createElement("option");
@@ -176,12 +181,14 @@ async function getData() {
 
     const tr = document.createElement("tr");
 
-    [code, nom, item.stock, item.stock_min, item.stock_max].forEach((val, i) => {
-      const td = document.createElement("td");
-      td.textContent = val;
-      if (i === 2) td.classList.add("stockCell");
-      tr.appendChild(td);
-    });
+    [code, nom, item.stock, item.stock_min, item.stock_max].forEach(
+      (val, i) => {
+        const td = document.createElement("td");
+        td.textContent = val;
+        if (i === 2) td.classList.add("stockCell");
+        tr.appendChild(td);
+      }
+    );
 
     ajouterCelluleActions(tr, code);
 
@@ -211,7 +218,11 @@ async function stock() {
 
   const nouveau = toNum(info.stockCell.textContent) + 1;
 
-  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  await supabaseClient
+    .from("produit")
+    .update({ stock: nouveau })
+    .eq("code_barre", code);
+
   getData();
 }
 
@@ -221,7 +232,11 @@ async function retrait() {
 
   const nouveau = toNum(info.stockCell.textContent) - 1;
 
-  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  await supabaseClient
+    .from("produit")
+    .update({ stock: nouveau })
+    .eq("code_barre", code);
+
   getData();
 }
 
@@ -229,7 +244,11 @@ async function definirStock() {
   const code = normalizeCode($("productSelect").value);
   const valeur = toNum($("input_stock").value);
 
-  await supabaseClient.from("produit").update({ stock: valeur }).eq("code_barre", code);
+  await supabaseClient
+    .from("produit")
+    .update({ stock: valeur })
+    .eq("code_barre", code);
+
   getData();
 }
 
@@ -267,6 +286,10 @@ async function handleBarcodeScan(event) {
   event.preventDefault();
 
   let code = normalizeCode($("barcode_input").value);
+
+  // 🔥 correction affichage
+  $("barcode_input").value = code;
+
   const produit = produitsParCode[code];
 
   if (!produit) {
@@ -297,8 +320,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   supabaseClient
     .channel("realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "produit" }, () => {
-      getData();
-    })
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "produit" },
+      () => {
+        getData();
+      }
+    )
     .subscribe();
 });
