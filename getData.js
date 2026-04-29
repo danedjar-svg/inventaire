@@ -4,6 +4,17 @@
 const LOGIN_KEY = "inventaire_logged_in";
 
 // ===============================
+//   NORMALISATION CODE BARRE
+// ===============================
+function normalizeCode(code) {
+  return String(code)
+    .trim()
+    .replace(/^R2N/, "")
+    .replace(/\.LC$/, "")
+    .replace(/\s/g, "");
+}
+
+// ===============================
 //   STATE
 // ===============================
 let produitsParCode = {};
@@ -65,7 +76,7 @@ function updateRowStatus(tr) {
 }
 
 // ===============================
-//   LOGIN SUPABASE
+//   LOGIN
 // ===============================
 async function login() {
   const email = $("login_email").value.trim();
@@ -77,7 +88,6 @@ async function login() {
   });
 
   if (error) {
-    console.error(error);
     $("login_error").style.display = "block";
     return;
   }
@@ -85,15 +95,14 @@ async function login() {
   localStorage.setItem(LOGIN_KEY, "1");
   $("login_section").style.display = "none";
   $("inventory_section").style.display = "block";
-  $("login_error").style.display = "none";
 
   getData();
 }
 
 async function logout() {
   await supabaseClient.auth.signOut();
-
   localStorage.removeItem(LOGIN_KEY);
+
   $("login_section").style.display = "block";
   $("inventory_section").style.display = "none";
 }
@@ -142,7 +151,7 @@ function ajouterCelluleActions(tr, codeBarre) {
 }
 
 // ===============================
-//   CHARGEMENT DONNÉES
+//   DATA
 // ===============================
 async function getData() {
   const { data, error } = await supabaseClient
@@ -151,63 +160,30 @@ async function getData() {
     .order("nom", { ascending: true });
 
   if (error) {
-    console.error("Erreur Supabase :", error);
-    alert("Erreur Supabase : " + error.message);
+    alert("Erreur Supabase");
     return;
   }
 
   produitsParCode = {};
-
-  const productDiv = $("product");
-  productDiv.innerHTML = "";
-
-  if (!data || data.length === 0) {
-    productDiv.textContent = "Aucun produit dans Supabase.";
-    return;
-  }
+  $("product").innerHTML = "";
 
   const table = document.createElement("table");
-  const thead = document.createElement("thead");
   const tbody = document.createElement("tbody");
 
-  const trHead = document.createElement("tr");
-  ["Code barre", "Nom", "Stock", "Min", "Max", "Actions"].forEach(titre => {
-    const th = document.createElement("th");
-    th.textContent = titre;
-    trHead.appendChild(th);
-  });
-
-  thead.appendChild(trHead);
-  table.appendChild(thead);
-
   data.forEach(item => {
-    const code = String(item.code_barre).trim();
-    const nom = String(item.nom).trim();
+    const code = normalizeCode(item.code_barre);
+    const nom = item.nom;
 
     const tr = document.createElement("tr");
 
-    const valeurs = [
-      code,
-      nom,
-      item.stock ?? 0,
-      item.stock_min ?? 1,
-      item.stock_max ?? 7
-    ];
-
-    valeurs.forEach((valeur, index) => {
+    [code, nom, item.stock, item.stock_min, item.stock_max].forEach((val, i) => {
       const td = document.createElement("td");
-      td.textContent = valeur;
-      if (index === 2) td.classList.add("stockCell");
+      td.textContent = val;
+      if (i === 2) td.classList.add("stockCell");
       tr.appendChild(td);
     });
 
     ajouterCelluleActions(tr, code);
-
-    tr.onclick = function (e) {
-      if (e.target.tagName === "BUTTON") return;
-      $("productSelect").value = code;
-      setSelected(code);
-    };
 
     tbody.appendChild(tr);
 
@@ -221,204 +197,81 @@ async function getData() {
   });
 
   table.appendChild(tbody);
-  productDiv.appendChild(table);
+  $("product").appendChild(table);
 
   rebuildDropdown();
 }
 
 // ===============================
-//   ACTIONS STOCK
+//   ACTIONS
 // ===============================
 async function stock() {
-  const code = $("productSelect").value;
+  const code = normalizeCode($("productSelect").value);
   const info = produitsParCode[code];
 
-  if (!code || !info) {
-    alert("Choisis un produit.");
-    return;
-  }
+  const nouveau = toNum(info.stockCell.textContent) + 1;
 
-  const nouveauStock = toNum(info.stockCell.textContent, 0) + 1;
-
-  const { error } = await supabaseClient
-    .from("produit")
-    .update({ stock: nouveauStock })
-    .eq("code_barre", code);
-
-  if (error) {
-    alert("Erreur mise à jour stock.");
-    console.error(error);
-    return;
-  }
-
-  await getData();
-  $("productSelect").value = code;
-  setSelected(code);
+  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  getData();
 }
 
 async function retrait() {
-  const code = $("productSelect").value;
+  const code = normalizeCode($("productSelect").value);
   const info = produitsParCode[code];
 
-  if (!code || !info) {
-    alert("Choisis un produit.");
-    return;
-  }
+  const nouveau = toNum(info.stockCell.textContent) - 1;
 
-  const nouveauStock = toNum(info.stockCell.textContent, 0) - 1;
-
-  const { error } = await supabaseClient
-    .from("produit")
-    .update({ stock: nouveauStock })
-    .eq("code_barre", code);
-
-  if (error) {
-    alert("Erreur mise à jour stock.");
-    console.error(error);
-    return;
-  }
-
-  await getData();
-  $("productSelect").value = code;
-  setSelected(code);
+  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  getData();
 }
 
 async function definirStock() {
-  const code = $("productSelect").value;
-  const info = produitsParCode[code];
+  const code = normalizeCode($("productSelect").value);
+  const valeur = toNum($("input_stock").value);
 
-  if (!code || !info) {
-    alert("Choisis un produit.");
-    return;
-  }
-
-  const saisie = $("input_stock").value.trim();
-  const actuel = toNum(info.stockCell.textContent, 0);
-  let nouveauStock;
-
-  if (saisie.startsWith("+")) {
-    nouveauStock = actuel + toNum(saisie.slice(1), NaN);
-  } else if (saisie.startsWith("-")) {
-    nouveauStock = actuel - toNum(saisie.slice(1), NaN);
-  } else {
-    nouveauStock = toNum(saisie, NaN);
-  }
-
-  if (!Number.isFinite(nouveauStock)) {
-    alert("Saisie invalide.");
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from("produit")
-    .update({ stock: nouveauStock })
-    .eq("code_barre", code);
-
-  if (error) {
-    alert("Erreur mise à jour stock.");
-    console.error(error);
-    return;
-  }
-
-  $("input_stock").value = "";
-
-  await getData();
-  $("productSelect").value = code;
-  setSelected(code);
+  await supabaseClient.from("produit").update({ stock: valeur }).eq("code_barre", code);
+  getData();
 }
 
 // ===============================
-//   AJOUT PRODUIT
+//   AJOUT / SUPPRESSION
 // ===============================
 async function addProduct() {
-  const code = $("new_code").value.trim();
-  const nom = $("new_nom").value.trim();
+  const code = normalizeCode($("new_code").value);
+  const nom = $("new_nom").value;
 
-  if (!code || !nom) {
-    alert("Code barre et nom obligatoires.");
-    return;
-  }
+  await supabaseClient.from("produit").insert([{
+    code_barre: code,
+    nom,
+    stock: toNum($("new_stock").value),
+    stock_min: toNum($("new_stock_min").value),
+    stock_max: toNum($("new_stock_max").value)
+  }]);
 
-  const { error } = await supabaseClient
-    .from("produit")
-    .insert([{
-      code_barre: code,
-      nom: nom,
-      stock: toNum($("new_stock").value, 0),
-      stock_min: toNum($("new_stock_min").value, 1),
-      stock_max: toNum($("new_stock_max").value, 7)
-    }]);
-
-  if (error) {
-    alert("Erreur ajout produit : " + error.message);
-    console.error(error);
-    return;
-  }
-
-  $("new_code").value = "";
-  $("new_nom").value = "";
-  $("new_stock").value = "0";
-  $("new_stock_min").value = "1";
-  $("new_stock_max").value = "7";
-
-  await getData();
+  getData();
 }
 
-// ===============================
-//   SUPPRESSION PRODUIT
-// ===============================
 async function deleteProduct() {
-  const code = $("delete_code").value.trim();
+  const code = normalizeCode($("delete_code").value);
 
-  if (!code) {
-    alert("Scanne ou entre un code barre à supprimer.");
-    return;
-  }
-
-  const produit = produitsParCode[code];
-
-  if (!produit) {
-    alert("Produit introuvable.");
-    return;
-  }
-
-  const confirmation = confirm("Supprimer le produit : " + produit.nom + " ?");
-  if (!confirmation) return;
-
-  const { error } = await supabaseClient
-    .from("produit")
-    .delete()
-    .eq("code_barre", code);
-
-  if (error) {
-    alert("Erreur suppression produit.");
-    console.error(error);
-    return;
-  }
-
-  $("delete_code").value = "";
-  await getData();
+  await supabaseClient.from("produit").delete().eq("code_barre", code);
+  getData();
 }
 
 // ===============================
-//   SCANNER DOUCHETTE
+//   SCANNER
 // ===============================
 async function handleBarcodeScan(event) {
   if (event.key !== "Enter") return;
 
   event.preventDefault();
 
-  const code = $("barcode_input").value.trim();
-  if (!code) return;
-
+  let code = normalizeCode($("barcode_input").value);
   const produit = produitsParCode[code];
 
   if (!produit) {
     $("barcode_result").textContent = "Produit non trouvé : " + code;
     $("new_code").value = code;
-    $("delete_code").value = code;
-    $("barcode_input").value = "";
-    alert("Produit non trouvé. Le code a été mis dans Ajouter produit.");
     return;
   }
 
@@ -426,43 +279,26 @@ async function handleBarcodeScan(event) {
   setSelected(code);
 
   const choix = prompt(
-    "Produit trouvé : " + produit.nom +
-    "\n\nTape 1 pour AJOUTER +1 au stock" +
-    "\nTape 2 pour RETIRER -1 du stock"
+    "Produit : " + produit.nom +
+    "\n1 = Ajouter\n2 = Retirer"
   );
 
-  if (choix === "1") {
-    await stock();
-    $("barcode_result").textContent = "Ajout +1 : " + produit.nom;
-  } else if (choix === "2") {
-    await retrait();
-    $("barcode_result").textContent = "Retrait -1 : " + produit.nom;
-  } else {
-    $("barcode_result").textContent = "Action annulée.";
-  }
+  if (choix === "1") await stock();
+  else if (choix === "2") await retrait();
 
   $("barcode_input").value = "";
 }
-// ===============================
-//   TEMPS RÉEL + INIT
-// ===============================
-document.addEventListener("DOMContentLoaded", async function () {
-  const { data } = await supabaseClient.auth.getSession();
 
-  if (data.session || localStorage.getItem(LOGIN_KEY) === "1") {
-    $("login_section").style.display = "none";
-    $("inventory_section").style.display = "block";
-    getData();
-  }
+// ===============================
+//   INIT
+// ===============================
+document.addEventListener("DOMContentLoaded", function () {
+  getData();
 
   supabaseClient
-    .channel("realtime-produit")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "produit" },
-      () => {
-        getData();
-      }
-    )
+    .channel("realtime")
+    .on("postgres_changes", { event: "*", schema: "public", table: "produit" }, () => {
+      getData();
+    })
     .subscribe();
 });
