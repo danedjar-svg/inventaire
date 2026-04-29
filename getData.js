@@ -3,6 +3,7 @@ const LOGIN_KEY = "inventaire_logged_in";
 let produitsParCode = {};
 let selectedCode = "";
 let allProductsData = [];
+let stockFilterMode = "all"; // all | hide0 | only0
 
 function normalizeCode(code) {
   return String(code)
@@ -175,7 +176,34 @@ function renderTable(data) {
 
   const trHead = document.createElement("tr");
 
-  ["Code barre", "Nom", "Stock", "Min", "Max", "Actions"].forEach(titre => {
+  // Colonnes
+  ["Code barre", "Nom"].forEach(titre => {
+    const th = document.createElement("th");
+    th.textContent = titre;
+    trHead.appendChild(th);
+  });
+
+  // 🔥 COLONNE STOCK AVEC FILTRE
+  const thStock = document.createElement("th");
+
+  const selectFilter = document.createElement("select");
+  selectFilter.innerHTML = `
+    <option value="all">Stock (Tous)</option>
+    <option value="hide0">Masquer stock 0</option>
+    <option value="only0">Seulement stock 0</option>
+  `;
+
+  selectFilter.value = stockFilterMode;
+
+  selectFilter.onchange = function () {
+    stockFilterMode = this.value;
+    applyFilters();
+  };
+
+  thStock.appendChild(selectFilter);
+  trHead.appendChild(thStock);
+
+  ["Min", "Max", "Actions"].forEach(titre => {
     const th = document.createElement("th");
     th.textContent = titre;
     trHead.appendChild(th);
@@ -184,7 +212,19 @@ function renderTable(data) {
   thead.appendChild(trHead);
   table.appendChild(thead);
 
-  data.forEach(item => {
+  // 🔥 FILTRAGE
+  let filteredData = data;
+
+  if (stockFilterMode === "hide0") {
+    filteredData = data.filter(item => toNum(item.stock, 0) !== 0);
+  }
+
+  if (stockFilterMode === "only0") {
+    filteredData = data.filter(item => toNum(item.stock, 0) === 0);
+  }
+
+  // Lignes
+  filteredData.forEach(item => {
     const code = normalizeCode(item.code_barre);
     const nom = item.nom;
 
