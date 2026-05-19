@@ -2,857 +2,484 @@
 <html lang="fr">
 
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALSTOM - Stock SAV</title>
 
-  <title>ALSTOM - Gestion de Stock SAV</title>
-
-  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-  <!-- JS -->
-  <script src="getData.js?v=1000002" defer></script>
+  <script src="getData.js?v=1000004" defer></script>
 
   <style>
-
     :root {
-
-      --alstom-blue: #003A70;
-      --alstom-blue-light: #005EB8;
-
-      --bg: #edf2f7;
-      --card: #ffffff;
-
-      --border: #dbe2ea;
-
+      --blue-dark: #002b55;
+      --blue: #003a70;
+      --blue-light: #0067b1;
+      --bg: #eef2f6;
+      --white: #ffffff;
+      --border: #d7dde5;
       --text: #1f2937;
       --muted: #6b7280;
-
-      --green: #dcfce7;
-      --orange: #fef3c7;
-      --red: #fee2e2;
+      --green: #dff5e3;
+      --orange: #fff1d6;
+      --red: #fde0df;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
-
       margin: 0;
-
       font-family: Arial, Helvetica, sans-serif;
-
       background: var(--bg);
-
       color: var(--text);
     }
 
-    /* ========================= */
-    /* HEADER */
-    /* ========================= */
-
-    .topbar {
-
-      height: 82px;
-
-      background:
-        linear-gradient(
-          90deg,
-          var(--alstom-blue),
-          var(--alstom-blue-light)
-        );
-
-      display: flex;
-
-      align-items: center;
-      justify-content: space-between;
-
-      padding: 0 28px;
-
-      color: white;
-
-      box-shadow:
-        0 4px 16px rgba(0,0,0,0.18);
-    }
-
-    .brand {
-
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand-title {
-
-      font-size: 26px;
-      font-weight: bold;
-
-      letter-spacing: 0.5px;
-    }
-
-    .brand-subtitle {
-
-      font-size: 13px;
-
-      opacity: 0.9;
-
-      margin-top: 4px;
-    }
-
-    .top-right {
-
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .logout-btn {
-
-      background: white;
-
-      color: var(--alstom-blue);
-
-      border: none;
-
-      padding: 10px 18px;
-
+    input, select, button {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 6px 0;
+      border: 1px solid var(--border);
       border-radius: 10px;
+      font-size: 14px;
+    }
 
+    button {
+      background: var(--blue-light);
+      color: white;
+      border: none;
       font-weight: bold;
-
       cursor: pointer;
     }
 
-    .logout-btn:hover {
-      opacity: 0.9;
-    }
+    button:hover { opacity: 0.92; }
 
-    /* ========================= */
-    /* LOGIN */
-    /* ========================= */
+    .danger-btn { background: #c62828; }
 
     #login_section {
-
-      width: 420px;
-
-      margin: 100px auto;
-
-      background: white;
-
+      max-width: 420px;
+      margin: 90px auto;
+      background: var(--white);
+      padding: 32px;
       border-radius: 18px;
-
-      padding: 30px;
-
-      box-shadow:
-        0 6px 20px rgba(0,0,0,0.12);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
     }
 
     #login_section h2 {
-
+      color: var(--blue);
       margin-top: 0;
-
-      color: var(--alstom-blue);
     }
 
-    /* ========================= */
-    /* MAIN */
-    /* ========================= */
-
-    #inventory_section {
-
+    .app-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
       min-height: 100vh;
     }
 
-    .container {
-
-      padding: 24px;
+    .sidebar {
+      background: linear-gradient(180deg, var(--blue-dark), var(--blue));
+      color: white;
+      padding: 24px 16px;
     }
 
-    /* ========================= */
-    /* DASHBOARD */
-    /* ========================= */
+    .sidebar-title {
+      font-size: 26px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+    }
+
+    .nav-item {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      background: rgba(255,255,255,0.08);
+      font-size: 14px;
+    }
+
+    .nav-item.active {
+      background: white;
+      color: var(--blue);
+      font-weight: bold;
+    }
+
+    .main {
+      padding: 22px;
+      overflow-x: hidden;
+    }
+
+    .main-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .main-header h1 {
+      margin: 0;
+      color: var(--blue);
+      font-size: 26px;
+    }
+
+    .logout-btn {
+      width: auto;
+      padding: 10px 18px;
+      background: var(--blue);
+    }
 
     .dashboard {
-
       display: grid;
-
-      grid-template-columns:
-        repeat(4, 1fr);
-
-      gap: 18px;
-
-      margin-bottom: 24px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
     }
 
-    .dashboard-card {
-
+    .stat-card {
       background: white;
-
-      border-radius: 18px;
-
-      padding: 22px;
-
       border: 1px solid var(--border);
-
-      box-shadow:
-        0 4px 14px rgba(0,0,0,0.05);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 5px 16px rgba(0,0,0,0.05);
     }
 
-    .dashboard-title {
-
+    .stat-label {
       color: var(--muted);
-
       font-size: 13px;
-
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
-    .dashboard-value {
-
-      font-size: 34px;
-
+    .stat-value {
+      font-size: 28px;
       font-weight: bold;
-
-      color: var(--alstom-blue);
+      color: var(--blue);
     }
 
-    /* ========================= */
-    /* LAYOUT */
-    /* ========================= */
-
-    .main-grid {
-
+    .content-grid {
       display: grid;
-
-      grid-template-columns:
-        350px 1fr;
-
-      gap: 24px;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
     }
-
-    /* ========================= */
-    /* PANELS */
-    /* ========================= */
 
     .panel {
-
       background: white;
-
-      border-radius: 18px;
-
       border: 1px solid var(--border);
-
-      box-shadow:
-        0 4px 14px rgba(0,0,0,0.05);
-
-      margin-bottom: 22px;
-
+      border-radius: 16px;
+      box-shadow: 0 5px 16px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
       overflow: hidden;
     }
 
     .panel-header {
-
-      padding: 18px 20px;
-
-      border-bottom:
-        1px solid var(--border);
-
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
       font-weight: bold;
-
-      color: var(--alstom-blue);
-
-      font-size: 17px;
+      color: var(--blue);
+      background: #f8fafc;
     }
 
-    .panel-content {
-
-      padding: 20px;
-    }
-
-    /* ========================= */
-    /* FORM */
-    /* ========================= */
-
-    input,
-    select,
-    button {
-
-      width: 100%;
-
-      padding: 11px 12px;
-
-      margin-top: 8px;
-      margin-bottom: 8px;
-
-      border-radius: 10px;
-
-      border: 1px solid var(--border);
-
-      font-size: 14px;
-    }
-
-    input:focus,
-    select:focus {
-
-      outline: none;
-
-      border-color:
-        var(--alstom-blue-light);
-
-      box-shadow:
-        0 0 0 3px rgba(0,94,184,0.12);
-    }
-
-    button {
-
-      background:
-        var(--alstom-blue-light);
-
-      color: white;
-
-      border: none;
-
-      font-weight: bold;
-
-      cursor: pointer;
-
-      transition: 0.2s;
-    }
-
-    button:hover {
-
-      transform: translateY(-1px);
-
-      opacity: 0.95;
-    }
-
-    .danger-btn {
-
-      background: #c62828;
-    }
-
-    .double-buttons {
-
-      display: grid;
-
-      grid-template-columns:
-        1fr 1fr;
-
-      gap: 10px;
-    }
-
-    /* ========================= */
-    /* MODE */
-    /* ========================= */
-
-    .mode-choice {
-
-      display: flex;
-
-      flex-direction: column;
-
-      gap: 10px;
+    .panel-body {
+      padding: 15px 16px;
     }
 
     .mode-choice label {
-
       display: flex;
-
       align-items: center;
-
-      gap: 10px;
-
+      gap: 8px;
+      margin: 8px 0;
       font-size: 14px;
     }
 
     .mode-choice input {
-
       width: auto;
-
       margin: 0;
     }
 
-    /* ========================= */
-    /* TABLE */
-    /* ========================= */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    #barcode_result,
+    #affichage_stock,
+    #current_mode_text {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .table-panel {
+      padding: 0;
+    }
+
+    .table-title {
+      padding: 15px 18px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-title h2 {
+      margin: 0;
+      color: var(--blue);
+      font-size: 20px;
+    }
 
     .table-wrapper {
-
       overflow-x: auto;
     }
 
     #product table {
-
       width: 100%;
-
       border-collapse: collapse;
-
       background: white;
+      min-width: 900px;
     }
 
     #product th {
-
-      background:
-        var(--alstom-blue);
-
+      background: var(--blue);
       color: white;
-
-      padding: 14px 12px;
-
+      padding: 11px 10px;
       text-align: left;
-
       font-size: 13px;
+      white-space: nowrap;
+    }
+
+    #product th select {
+      margin: 0;
+      padding: 7px;
+      font-size: 12px;
+      border-radius: 8px;
     }
 
     #product td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 13px;
+      vertical-align: middle;
+    }
 
-      padding: 12px;
-
-      border-bottom:
-        1px solid #edf2f7;
-
-      font-size: 14px;
+    #product td select {
+      margin: 0;
+      padding: 7px;
+      font-size: 12px;
     }
 
     #product tr:hover td {
-
-      background:
-        #eef6ff;
+      background: #eef6ff;
     }
 
-    /* ========================= */
-    /* STATUS */
-    /* ========================= */
-
-    tr.status-good td {
-
-      background:
-        var(--green);
-    }
-
-    tr.status-warning td {
-
-      background:
-        var(--orange);
-    }
-
-    tr.status-danger td {
-
-      background:
-        var(--red);
-    }
+    tr.status-good td { background-color: var(--green); }
+    tr.status-warning td { background-color: var(--orange); }
+    tr.status-danger td { background-color: var(--red); }
 
     tr.status-selected td {
-
-      outline:
-        2px solid var(--alstom-blue-light);
+      outline: 2px solid var(--blue-light);
     }
 
-    /* ========================= */
-    /* RESPONSIVE */
-    /* ========================= */
+    #product td button {
+      width: auto;
+      padding: 6px 10px;
+      margin: 2px;
+      border-radius: 8px;
+    }
 
-    @media (max-width: 1300px) {
-
-      .main-grid {
-
+    @media (max-width: 1200px) {
+      .app-layout {
         grid-template-columns: 1fr;
       }
 
-      .dashboard {
+      .sidebar {
+        display: none;
+      }
 
-        grid-template-columns:
-          repeat(2, 1fr);
+      .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
       }
     }
-
   </style>
-
 </head>
 
 <body>
 
-  <!-- LOGIN -->
   <div id="login_section">
-
     <h2>Connexion</h2>
 
-    <input
-      id="login_email"
-      type="email"
-      placeholder="Email"
-    >
+    <input id="login_email" type="email" placeholder="Email">
+    <input id="login_password" type="password" placeholder="Mot de passe">
 
-    <input
-      id="login_password"
-      type="password"
-      placeholder="Mot de passe"
-    >
+    <button onclick="login()">Connexion</button>
 
-    <button onclick="login()">
-      Connexion
-    </button>
-
-    <p
-      id="login_error"
-      style="display:none; color:red;"
-    >
+    <p id="login_error" style="display:none; color:red;">
       Erreur login
     </p>
-
   </div>
 
-  <!-- APP -->
-  <div
-    id="inventory_section"
-    style="display:none;"
-  >
+  <div id="inventory_section" style="display:none;">
 
-    <!-- TOPBAR -->
-    <div class="topbar">
+    <div class="app-layout">
 
-      <div class="brand">
+      <aside class="sidebar">
+        <div class="sidebar-title">ALSTOM</div>
 
-        <div class="brand-title">
-          ALSTOM — Gestion de Stock SAV
+        <div class="nav-item active">Inventaire</div>
+        <div class="nav-item">Entrées / Sorties</div>
+        <div class="nav-item">Emplacements</div>
+        <div class="nav-item">Alertes</div>
+      </aside>
+
+      <main class="main">
+
+        <div class="main-header">
+          <h1>Stock SAV</h1>
+
+          <button class="logout-btn" onclick="logout()">
+            Déconnexion
+          </button>
         </div>
 
-        <div class="brand-subtitle">
-          Inventaire temps réel • Scanner • Suivi des pièces
-        </div>
-
-      </div>
-
-      <div class="top-right">
-
-        <div>
-          Technicien SAV
-        </div>
-
-        <button
-          class="logout-btn"
-          onclick="logout()"
-        >
-          Déconnexion
-        </button>
-
-      </div>
-
-    </div>
-
-    <!-- CONTENT -->
-    <div class="container">
-
-      <!-- DASHBOARD -->
-      <div class="dashboard">
-
-        <div class="dashboard-card">
-
-          <div class="dashboard-title">
-            Produits suivis
+        <section class="dashboard">
+          <div class="stat-card">
+            <div class="stat-label">Produits suivis</div>
+            <div class="stat-value">428</div>
           </div>
 
-          <div class="dashboard-value">
-            428
+          <div class="stat-card">
+            <div class="stat-label">Stocks critiques</div>
+            <div class="stat-value">18</div>
           </div>
 
-        </div>
-
-        <div class="dashboard-card">
-
-          <div class="dashboard-title">
-            Stocks critiques
+          <div class="stat-card">
+            <div class="stat-label">Bungalow</div>
+            <div class="stat-value">146</div>
           </div>
 
-          <div class="dashboard-value">
-            18
+          <div class="stat-card">
+            <div class="stat-label">Container SAV</div>
+            <div class="stat-value">92</div>
           </div>
+        </section>
 
-        </div>
+        <section class="content-grid">
 
-        <div class="dashboard-card">
+          <div>
 
-          <div class="dashboard-title">
-            Bungalow
-          </div>
+            <div class="panel">
+              <div class="panel-header">Mode</div>
+              <div class="panel-body">
+                <div class="mode-choice">
+                  <label>
+                    <input type="radio" name="work_mode" value="movement" checked>
+                    Entrée / Sortie
+                  </label>
 
-          <div class="dashboard-value">
-            146
-          </div>
+                  <label>
+                    <input type="radio" name="work_mode" value="inventory">
+                    Inventaire
+                  </label>
+                </div>
 
-        </div>
-
-        <div class="dashboard-card">
-
-          <div class="dashboard-title">
-            Container SAV
-          </div>
-
-          <div class="dashboard-value">
-            92
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- GRID -->
-      <div class="main-grid">
-
-        <!-- LEFT -->
-        <div>
-
-          <!-- MODE -->
-          <div class="panel">
-
-            <div class="panel-header">
-              Mode de travail
-            </div>
-
-            <div class="panel-content">
-
-              <div class="mode-choice">
-
-                <label>
-
-                  <input
-                    type="radio"
-                    name="work_mode"
-                    value="movement"
-                    checked
-                  >
-
-                  Entrée / Sortie
-
-                </label>
-
-                <label>
-
-                  <input
-                    type="radio"
-                    name="work_mode"
-                    value="inventory"
-                  >
-
-                  Inventaire
-
-                </label>
-
+                <p id="current_mode_text">Mode actuel : Entrée / Sortie</p>
               </div>
-
-              <p id="current_mode_text">
-                Mode actuel : Entrée / Sortie
-              </p>
-
             </div>
 
-          </div>
+            <div class="panel">
+              <div class="panel-header">Scanner</div>
+              <div class="panel-body">
+                <input
+                  type="text"
+                  id="barcode_input"
+                  placeholder="Scanner ici"
+                  onkeydown="handleBarcodeScan(event)"
+                  autofocus
+                >
 
-          <!-- SCANNER -->
-          <div class="panel">
-
-            <div class="panel-header">
-              Scanner code-barres
-            </div>
-
-            <div class="panel-content">
-
-              <input
-                type="text"
-                id="barcode_input"
-                placeholder="Scanner ici"
-                onkeydown="handleBarcodeScan(event)"
-                autofocus
-              >
-
-              <p id="barcode_result">
-                Aucun scan
-              </p>
-
-            </div>
-
-          </div>
-
-          <!-- STOCK -->
-          <div class="panel">
-
-            <div class="panel-header">
-              Gestion du stock
-            </div>
-
-            <div class="panel-content">
-
-              <select id="productSelect">
-
-                <option value="">
-                  -- Sélectionnez un produit --
-                </option>
-
-              </select>
-
-              <input
-                type="text"
-                id="input_stock"
-                placeholder="+5, -3, 10"
-              >
-
-              <button onclick="definirStock()">
-                Définir stock
-              </button>
-
-              <div class="double-buttons">
-
-                <button onclick="stock()">
-                  +1
-                </button>
-
-                <button onclick="retrait()">
-                  -1
-                </button>
-
+                <p id="barcode_result">Aucun scan</p>
               </div>
+            </div>
 
-              <p id="affichage_stock">
-                stock : 0
-              </p>
+            <div class="panel">
+              <div class="panel-header">Stock</div>
+              <div class="panel-body">
+                <select id="productSelect">
+                  <option value="">-- Sélectionnez un produit --</option>
+                </select>
 
+                <input
+                  type="text"
+                  id="input_stock"
+                  placeholder="+5, -3, 10"
+                >
+
+                <button onclick="definirStock()">Définir</button>
+
+                <div class="quick-actions">
+                  <button onclick="stock()">+1</button>
+                  <button onclick="retrait()">-1</button>
+                </div>
+
+                <p id="affichage_stock">stock : 0</p>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">Ajouter</div>
+              <div class="panel-body">
+                <input id="new_code" placeholder="Code barre">
+                <input id="new_nom" placeholder="Nom">
+                <input id="new_stock" type="number" value="0">
+                <input id="new_stock_min" type="number" value="1">
+                <input id="new_stock_max" type="number" value="7">
+
+                <select id="new_emplacement">
+                  <option value="">-- Emplacement --</option>
+                  <option value="Bungalow">Bungalow</option>
+                  <option value="Container Retrofit">Container Retrofit</option>
+                  <option value="Container SAV">Container SAV</option>
+                </select>
+
+                <button onclick="addProduct()">Ajouter</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">Supprimer</div>
+              <div class="panel-body">
+                <input id="delete_code" placeholder="Code barre">
+                <button class="danger-btn" onclick="deleteProduct()">Supprimer</button>
+              </div>
             </div>
 
           </div>
 
-          <!-- AJOUT -->
-          <div class="panel">
-
-            <div class="panel-header">
-              Ajouter produit
+          <div class="panel table-panel">
+            <div class="table-title">
+              <h2>Inventaire des produits</h2>
             </div>
 
-            <div class="panel-content">
-
-              <input
-                id="new_code"
-                placeholder="Code barre"
-              >
-
-              <input
-                id="new_nom"
-                placeholder="Nom"
-              >
-
-              <input
-                id="new_stock"
-                type="number"
-                value="0"
-              >
-
-              <input
-                id="new_stock_min"
-                type="number"
-                value="1"
-              >
-
-              <input
-                id="new_stock_max"
-                type="number"
-                value="7"
-              >
-
-              <select id="new_emplacement">
-
-                <option value="">
-                  -- Emplacement --
-                </option>
-
-                <option value="Bungalow">
-                  Bungalow
-                </option>
-
-                <option value="Container Retrofit">
-                  Container Retrofit
-                </option>
-
-                <option value="Container SAV">
-                  Container SAV
-                </option>
-
-              </select>
-
-              <button onclick="addProduct()">
-                Ajouter
-              </button>
-
-            </div>
-
-          </div>
-
-          <!-- DELETE -->
-          <div class="panel">
-
-            <div class="panel-header">
-              Supprimer produit
-            </div>
-
-            <div class="panel-content">
-
-              <input
-                id="delete_code"
-                placeholder="Code barre"
-              >
-
-              <button
-                class="danger-btn"
-                onclick="deleteProduct()"
-              >
-                Supprimer
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <!-- RIGHT -->
-        <div>
-
-          <div class="panel">
-
-            <div class="panel-header">
-              Inventaire des produits
-            </div>
-
-            <div class="panel-content table-wrapper">
-
+            <div class="table-wrapper">
               <div id="product"></div>
-
             </div>
-
           </div>
 
-        </div>
+        </section>
 
-      </div>
+      </main>
 
     </div>
 
   </div>
 
-  <!-- SUPABASE -->
   <script>
+    const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
+    const SUPABASE_KEY = "COLLE_TA_VRAIE_CLE_ICI";
 
-    const SUPABASE_URL =
-      "https://tqpmetwknggpqalbldcl.supabase.co";
-
-    const SUPABASE_KEY =
-      "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
-
-    const supabaseClient =
-      window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-      );
-
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
   </script>
 
 </body>
