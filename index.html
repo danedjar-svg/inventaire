@@ -7,21 +7,22 @@
   <title>ALSTOM - Stock SAV</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=1000005" defer></script>
+  <script src="getData.js?v=1000006" defer></script>
 
   <style>
     :root {
       --blue-dark: #002b55;
       --blue: #003a70;
-      --blue-light: #0067b1;
-      --bg: #eef2f6;
+      --blue-light: #0070c9;
+      --blue-soft: #e8f3ff;
+      --bg: #f3f6fb;
       --white: #ffffff;
-      --border: #d7dde5;
+      --border: #d8e0ea;
       --text: #1f2937;
       --muted: #6b7280;
-      --green: #dff5e3;
-      --orange: #fff1d6;
-      --red: #fde0df;
+      --green: #dcfce7;
+      --orange: #fff4d6;
+      --red: #ffe1e1;
     }
 
     * { box-sizing: border-box; }
@@ -29,38 +30,53 @@
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top left, #dceeff 0, transparent 32%),
+        linear-gradient(135deg, #f8fbff, #eef3f9);
       color: var(--text);
     }
 
     input, select, button {
       width: 100%;
-      padding: 9px 10px;
+      padding: 9px 11px;
       margin: 5px 0;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
     }
 
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--blue-light);
+      box-shadow: 0 0 0 3px rgba(0,112,201,0.16);
+    }
+
     button {
-      background: var(--blue-light);
+      background: linear-gradient(135deg, var(--blue-light), var(--blue));
       color: white;
       border: none;
       font-weight: bold;
       cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,58,112,0.18);
     }
 
-    button:hover { opacity: 0.92; }
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.96;
+    }
 
-    .danger-btn { background: #c62828; }
+    .danger-btn {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+    }
 
     #login_section {
       max-width: 420px;
       margin: 90px auto;
-      background: var(--white);
+      background: rgba(255,255,255,0.92);
       padding: 32px;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.14);
+      border: 1px solid rgba(255,255,255,0.8);
     }
 
     #login_section h2 {
@@ -70,57 +86,65 @@
 
     .app-layout {
       display: grid;
-      grid-template-columns: 310px 1fr;
+      grid-template-columns: 315px 1fr;
       min-height: 100vh;
     }
 
     .sidebar {
-      background: linear-gradient(180deg, var(--blue-dark), var(--blue));
+      background:
+        linear-gradient(180deg, rgba(0,43,85,0.98), rgba(0,58,112,0.96)),
+        radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 35%);
       color: white;
-      padding: 20px 14px;
+      padding: 22px 15px;
       overflow-y: auto;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.14);
     }
 
     .sidebar-title {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: bold;
-      letter-spacing: 1px;
-      margin-bottom: 18px;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+      padding-left: 4px;
     }
 
     .sidebar .panel {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      margin-bottom: 12px;
+      background: rgba(255,255,255,0.11);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      margin-bottom: 13px;
       overflow: hidden;
-      box-shadow: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      backdrop-filter: blur(6px);
     }
 
     .sidebar .panel-header {
-      padding: 10px 12px;
+      padding: 11px 13px;
       font-weight: bold;
       color: white;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      font-size: 14px;
     }
 
     .sidebar .panel-body {
-      padding: 10px 12px;
+      padding: 11px 13px;
     }
 
     .sidebar input,
     .sidebar select {
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.96);
       color: var(--text);
+      border: none;
     }
 
     .sidebar #barcode_result,
     .sidebar #affichage_stock,
     .sidebar #current_mode_text {
-      color: rgba(255,255,255,0.85);
+      color: rgba(255,255,255,0.88);
       font-size: 12px;
       margin-bottom: 0;
+      line-height: 1.4;
     }
 
     .mode-choice label {
@@ -134,6 +158,7 @@
     .mode-choice input {
       width: auto;
       margin: 0;
+      accent-color: var(--blue-light);
     }
 
     .quick-actions {
@@ -143,7 +168,7 @@
     }
 
     .main {
-      padding: 22px;
+      padding: 24px;
       overflow-x: hidden;
     }
 
@@ -152,18 +177,28 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 18px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 18px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
     }
 
     .main-header h1 {
       margin: 0;
       color: var(--blue);
-      font-size: 26px;
+      font-size: 27px;
+    }
+
+    .main-header small {
+      color: var(--muted);
+      display: block;
+      margin-top: 4px;
     }
 
     .logout-btn {
       width: auto;
       padding: 10px 18px;
-      background: var(--blue);
     }
 
     .dashboard {
@@ -174,11 +209,23 @@
     }
 
     .stat-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.95);
+      border-radius: 18px;
       padding: 16px;
-      box-shadow: 0 5px 16px rgba(0,0,0,0.05);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      background: var(--blue-light);
     }
 
     .stat-label {
@@ -194,16 +241,16 @@
     }
 
     .table-panel {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 5px 16px rgba(0,0,0,0.05);
+      background: rgba(255,255,255,0.94);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
       overflow: hidden;
     }
 
     .table-title {
-      padding: 15px 18px;
-      background: white;
+      padding: 16px 18px;
+      background: linear-gradient(90deg, #ffffff, #f1f7ff);
       border-bottom: 1px solid var(--border);
     }
 
@@ -225,7 +272,7 @@
     }
 
     #product th {
-      background: var(--blue);
+      background: linear-gradient(135deg, var(--blue), var(--blue-light));
       color: white;
       padding: 11px 10px;
       text-align: left;
@@ -238,6 +285,7 @@
       padding: 7px;
       font-size: 12px;
       border-radius: 8px;
+      border: none;
     }
 
     #product td {
@@ -247,6 +295,10 @@
       vertical-align: middle;
     }
 
+    #product tbody tr:nth-child(even) td {
+      filter: brightness(0.985);
+    }
+
     #product td select {
       margin: 0;
       padding: 7px;
@@ -254,7 +306,7 @@
     }
 
     #product tr:hover td {
-      background: #eef6ff;
+      background: #eaf5ff !important;
     }
 
     tr.status-good td { background-color: var(--green); }
@@ -270,15 +322,12 @@
       padding: 6px 10px;
       margin: 2px;
       border-radius: 8px;
+      box-shadow: none;
     }
 
     @media (max-width: 1200px) {
       .app-layout {
         grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        position: relative;
       }
 
       .dashboard {
@@ -402,7 +451,10 @@
       <main class="main">
 
         <div class="main-header">
-          <h1>Stock SAV</h1>
+          <div>
+            <h1>Stock SAV</h1>
+            <small>Inventaire, mouvements et emplacements</small>
+          </div>
 
           <button class="logout-btn" onclick="logout()">
             Déconnexion
