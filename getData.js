@@ -1,11 +1,10 @@
-
-
 const LOGIN_KEY = "inventaire_logged_in";
 
 let produitsParCode = {};
 let selectedCode = "";
 let allProductsData = [];
 let stockFilterMode = "all";
+let emplacementFilterMode = "all";
 
 function normalizeCode(code) {
   return String(code)
@@ -181,6 +180,12 @@ function applyFilters() {
     filteredData = filteredData.filter(item => toNum(item.stock, 0) === 0);
   }
 
+  if (emplacementFilterMode !== "all") {
+    filteredData = filteredData.filter(item =>
+      (item.emplacement || "") === emplacementFilterMode
+    );
+  }
+
   renderTable(filteredData);
 }
 
@@ -228,7 +233,22 @@ function renderTable(data) {
   trHead.appendChild(thMax);
 
   const thEmplacement = document.createElement("th");
-  thEmplacement.textContent = "Emplacement";
+  const emplacementSelect = document.createElement("select");
+
+  emplacementSelect.innerHTML = `
+    <option value="all">Emplacement : Tous</option>
+    <option value="Bungalow">Bungalow</option>
+    <option value="Container Retrofit">Container Retrofit</option>
+    <option value="Container SAV">Container SAV</option>
+  `;
+
+  emplacementSelect.value = emplacementFilterMode;
+  emplacementSelect.onchange = function () {
+    emplacementFilterMode = this.value;
+    applyFilters();
+  };
+
+  thEmplacement.appendChild(emplacementSelect);
   trHead.appendChild(thEmplacement);
 
   const thActions = document.createElement("th");
@@ -403,7 +423,6 @@ async function deleteProduct() {
     .eq("code_barre", code);
 
   $("delete_code").value = "";
-
   getData();
 }
 
