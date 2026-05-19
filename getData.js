@@ -38,22 +38,51 @@ function toNum(v, fallback = 0) {
 }
 
 // ===============================
+//   MODE DE TRAVAIL
+// ===============================
+function getCurrentMode() {
+
+  const selected =
+    document.querySelector('input[name="work_mode"]:checked');
+
+  return selected ? selected.value : "movement";
+}
+
+function updateModeDisplay() {
+
+  const mode = getCurrentMode();
+
+  $("current_mode_text").textContent =
+    mode === "inventory"
+      ? "Mode actuel : Inventaire"
+      : "Mode actuel : Entrée / Sortie";
+}
+
+// ===============================
 //   SELECTION
 // ===============================
 function clearSelectionHighlight() {
+
   Object.values(produitsParCode).forEach(p => {
-    if (p.row) p.row.classList.remove("status-selected");
+    if (p.row) {
+      p.row.classList.remove("status-selected");
+    }
   });
 }
 
 function setSelected(code) {
+
   selectedCode = normalizeCode(code || "");
+
   clearSelectionHighlight();
 
   const info = produitsParCode[selectedCode];
 
   if (!selectedCode || !info) {
-    $("affichage_stock").textContent = "stock : 0";
+
+    $("affichage_stock").textContent =
+      "stock : 0";
+
     return;
   }
 
@@ -67,13 +96,19 @@ function setSelected(code) {
 //   COULEURS
 // ===============================
 function updateRowStatus(tr) {
+
   const tds = tr.querySelectorAll("td");
 
   if (tds.length < 5) return;
 
-  const stock = toNum(tds[2].textContent, 0);
-  const stockMin = toNum(tds[3].textContent, 0);
-  const stockMax = toNum(tds[4].textContent, 0);
+  const stock =
+    toNum(tds[2].textContent, 0);
+
+  const stockMin =
+    toNum(tds[3].textContent, 0);
+
+  const stockMax =
+    toNum(tds[4].textContent, 0);
 
   tr.classList.remove(
     "status-good",
@@ -86,15 +121,18 @@ function updateRowStatus(tr) {
     stock < stockMin ||
     stock > stockMax
   ) {
+
     tr.classList.add("status-danger");
 
   } else if (
     stock === stockMin + 1 ||
     stock === stockMax - 1
   ) {
+
     tr.classList.add("status-warning");
 
   } else {
+
     tr.classList.add("status-good");
   }
 }
@@ -104,8 +142,11 @@ function updateRowStatus(tr) {
 // ===============================
 async function login() {
 
-  const email = $("login_email").value.trim();
-  const password = $("login_password").value.trim();
+  const email =
+    $("login_email").value.trim();
+
+  const password =
+    $("login_password").value.trim();
 
   const { error } =
     await supabaseClient.auth.signInWithPassword({
@@ -114,8 +155,11 @@ async function login() {
     });
 
   if (error) {
+
     $("login_error").style.display = "block";
+
     console.error(error);
+
     return;
   }
 
@@ -149,7 +193,8 @@ function rebuildDropdown() {
 
   Object.entries(produitsParCode).forEach(([code, info]) => {
 
-    const option = document.createElement("option");
+    const option =
+      document.createElement("option");
 
     option.value = code;
     option.textContent = info.nom;
@@ -170,20 +215,28 @@ function ajouterCelluleActions(tr, codeBarre) {
   const td = document.createElement("td");
 
   const btnPlus = document.createElement("button");
+
   btnPlus.textContent = "+";
 
   btnPlus.onclick = () => {
+
     $("productSelect").value = codeBarre;
+
     setSelected(codeBarre);
+
     stock();
   };
 
   const btnMoins = document.createElement("button");
+
   btnMoins.textContent = "-";
 
   btnMoins.onclick = () => {
+
     $("productSelect").value = codeBarre;
+
     setSelected(codeBarre);
+
     retrait();
   };
 
@@ -205,8 +258,11 @@ async function getData() {
       .order("nom", { ascending: true });
 
   if (error) {
+
     console.error(error);
+
     alert("Erreur Supabase");
+
     return;
   }
 
@@ -223,6 +279,7 @@ function applyFilters() {
   let filteredData = [...allProductsData];
 
   if (stockFilterMode === "hide0") {
+
     filteredData =
       filteredData.filter(item =>
         toNum(item.stock, 0) !== 0
@@ -230,6 +287,7 @@ function applyFilters() {
   }
 
   if (stockFilterMode === "only0") {
+
     filteredData =
       filteredData.filter(item =>
         toNum(item.stock, 0) === 0
@@ -255,7 +313,7 @@ function renderTable(data) {
 
   const trHead = document.createElement("tr");
 
-  // CODE BARRE
+  // CODE
   const thCode = document.createElement("th");
   thCode.textContent = "Code barre";
   trHead.appendChild(thCode);
@@ -279,7 +337,9 @@ function renderTable(data) {
   stockSelect.value = stockFilterMode;
 
   stockSelect.onchange = function () {
+
     stockFilterMode = this.value;
+
     applyFilters();
   };
 
@@ -309,7 +369,8 @@ function renderTable(data) {
   // LIGNES
   data.forEach(item => {
 
-    const code = normalizeCode(item.code_barre);
+    const code =
+      normalizeCode(item.code_barre);
 
     const tr = document.createElement("tr");
 
@@ -336,18 +397,6 @@ function renderTable(data) {
 
     ajouterCelluleActions(tr, code);
 
-    tr.onclick = function (event) {
-
-      if (
-        event.target.tagName === "BUTTON" ||
-        event.target.tagName === "SELECT"
-      ) return;
-
-      $("productSelect").value = code;
-
-      setSelected(code);
-    };
-
     tbody.appendChild(tr);
 
     produitsParCode[code] = {
@@ -367,14 +416,15 @@ function renderTable(data) {
 }
 
 // ===============================
-//   ACTIONS STOCK
+//   STOCK
 // ===============================
 async function stock() {
 
   const code =
     normalizeCode($("productSelect").value);
 
-  const info = produitsParCode[code];
+  const info =
+    produitsParCode[code];
 
   if (!info) return;
 
@@ -394,7 +444,8 @@ async function retrait() {
   const code =
     normalizeCode($("productSelect").value);
 
-  const info = produitsParCode[code];
+  const info =
+    produitsParCode[code];
 
   if (!info) return;
 
@@ -409,26 +460,44 @@ async function retrait() {
   getData();
 }
 
-async function definirStock() {
+// ===============================
+//   INVENTAIRE
+// ===============================
+async function inventoryUpdate(code) {
 
-  const code =
-    normalizeCode($("productSelect").value);
+  const produit =
+    produitsParCode[code];
+
+  if (!produit) return;
 
   const valeur =
-    toNum($("input_stock").value);
+    prompt(
+      "Inventaire : " + produit.nom +
+      "\n\nQuantité réelle trouvée :"
+    );
+
+  if (valeur === null) return;
+
+  const quantite =
+    toNum(valeur, NaN);
+
+  if (!Number.isFinite(quantite)) {
+
+    alert("Valeur invalide");
+
+    return;
+  }
 
   await supabaseClient
     .from("produit")
-    .update({ stock: valeur })
+    .update({ stock: quantite })
     .eq("code_barre", code);
-
-  $("input_stock").value = "";
 
   getData();
 }
 
 // ===============================
-//   AJOUT PRODUIT
+//   AJOUT / SUPPRESSION
 // ===============================
 async function addProduct() {
 
@@ -451,9 +520,6 @@ async function addProduct() {
   getData();
 }
 
-// ===============================
-//   SUPPRESSION PRODUIT
-// ===============================
 async function deleteProduct() {
 
   const code =
@@ -481,7 +547,8 @@ async function handleBarcodeScan(event) {
 
   $("barcode_input").value = code;
 
-  const produit = produitsParCode[code];
+  const produit =
+    produitsParCode[code];
 
   if (!produit) {
 
@@ -498,6 +565,24 @@ async function handleBarcodeScan(event) {
 
   setSelected(code);
 
+  // ===============================
+  //   MODE INVENTAIRE
+  // ===============================
+  if (getCurrentMode() === "inventory") {
+
+    await inventoryUpdate(code);
+
+    $("barcode_result").textContent =
+      "Inventaire effectué : " + produit.nom;
+
+    $("barcode_input").value = "";
+
+    return;
+  }
+
+  // ===============================
+  //   MODE ENTREE / SORTIE
+  // ===============================
   const choix = prompt(
     "Produit : " + produit.nom +
     "\n\n1 = Ajouter +1" +
@@ -505,18 +590,26 @@ async function handleBarcodeScan(event) {
   );
 
   if (choix === "1") {
+
     await stock();
+
+    $("barcode_result").textContent =
+      "Ajout +1 : " + produit.nom;
   }
 
   else if (choix === "2") {
+
     await retrait();
+
+    $("barcode_result").textContent =
+      "Retrait -1 : " + produit.nom;
   }
 
   $("barcode_input").value = "";
 }
 
 // ===============================
-//   CLEAN AUTO INPUTS
+//   CLEAN INPUTS
 // ===============================
 document.addEventListener("input", function (event) {
 
@@ -530,6 +623,7 @@ document.addEventListener("input", function (event) {
       normalizeCode(event.target.value);
 
     if (event.target.value !== cleaned) {
+
       event.target.value = cleaned;
     }
   }
@@ -542,6 +636,20 @@ document.addEventListener(
   "DOMContentLoaded",
   async function () {
 
+    // Mode
+    document
+      .querySelectorAll('input[name="work_mode"]')
+      .forEach(radio => {
+
+        radio.addEventListener(
+          "change",
+          updateModeDisplay
+        );
+      });
+
+    updateModeDisplay();
+
+    // Session
     const { data } =
       await supabaseClient.auth.getSession();
 
@@ -551,11 +659,13 @@ document.addEventListener(
     ) {
 
       $("login_section").style.display = "none";
+
       $("inventory_section").style.display = "block";
 
       getData();
     }
 
+    // Temps réel
     supabaseClient
       .channel("realtime-produit")
       .on(
