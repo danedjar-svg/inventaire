@@ -3,135 +3,589 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Gestion de stock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Gestion de Stock SAV</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=1000000" defer></script>
+  <script src="getData.js?v=1000001" defer></script>
 
   <style>
-    body { font-family: Arial; margin: 20px; background: #f5f5f5; }
-    input, button, select { padding: 6px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
-    button { cursor: pointer; }
-    table { border-collapse: collapse; width: 100%; background: white; margin-top: 15px; }
-    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eaeaea; }
 
-    tr.status-good { background-color: #d9f7d9; }
-    tr.status-warning { background-color: #ffe8b3; }
-    tr.status-danger { background-color: #ffd0d0; }
-    tr.status-selected { box-shadow: inset 0 0 0 2px #3aa0ff; }
+    :root {
+      --alstom-blue: #003A70;
+      --alstom-blue-light: #005EB8;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --border: #d9dde3;
+      --text: #1f2933;
+      --muted: #6b7280;
 
-    #barcode_input { width: 320px; font-size: 16px; }
-
-    .mode-box {
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
+      --green: #dff5e3;
+      --orange: #fff1d6;
+      --red: #fde0df;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ========================= */
+    /* HEADER */
+    /* ========================= */
+
+    .topbar {
+      background: linear-gradient(
+        90deg,
+        var(--alstom-blue),
+        var(--alstom-blue-light)
+      );
+
+      color: white;
+
+      padding: 18px 28px;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logout-btn {
+      background: white;
+      color: var(--alstom-blue);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ========================= */
+    /* LOGIN */
+    /* ========================= */
+
+    #login_section {
+      max-width: 420px;
+      margin: 100px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    #login_section h2 {
+      margin-top: 0;
+      color: var(--alstom-blue);
+    }
+
+    /* ========================= */
+    /* LAYOUT */
+    /* ========================= */
+
+    #inventory_section {
+      padding: 24px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 18px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 30px;
+      font-weight: bold;
+      color: var(--alstom-blue);
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .panel h3 {
+      margin-top: 0;
+      color: var(--alstom-blue);
+    }
+
+    /* ========================= */
+    /* FORM */
+    /* ========================= */
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    button {
+      background: var(--alstom-blue-light);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    .danger-btn {
+      background: #c62828;
+    }
+
+    .small-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ========================= */
+    /* TABLE */
+    /* ========================= */
+
+    #product table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    #product th {
+      background: var(--alstom-blue);
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    #product td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    #product tr:hover td {
+      background: #eef6ff;
+    }
+
+    /* ========================= */
+    /* STATUS */
+    /* ========================= */
+
+    tr.status-good td {
+      background-color: var(--green);
+    }
+
+    tr.status-warning td {
+      background-color: var(--orange);
+    }
+
+    tr.status-danger td {
+      background-color: var(--red);
+    }
+
+    tr.status-selected td {
+      outline: 2px solid var(--alstom-blue-light);
+    }
+
+    /* ========================= */
+    /* RESPONSIVE */
+    /* ========================= */
+
+    @media (max-width: 1200px) {
+
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
   </style>
 </head>
 
 <body>
 
+  <!-- LOGIN -->
   <div id="login_section">
+
     <h2>Connexion</h2>
 
-    <input id="login_email" type="email" placeholder="Email">
-    <input id="login_password" type="password" placeholder="Mot de passe">
-    <button onclick="login()">Connexion</button>
-
-    <p id="login_error" style="color:red; display:none;">Erreur login</p>
-  </div>
-
-  <div id="inventory_section" style="display:none;">
-
-    <h2>Inventaire</h2>
-    <button onclick="logout()">Déconnexion</button>
-
-    <div class="mode-box">
-      <strong>Mode de travail :</strong>
-
-      <label>
-        <input type="radio" name="work_mode" value="movement" checked>
-        Entrée / Sortie
-      </label>
-
-      <label>
-        <input type="radio" name="work_mode" value="inventory">
-        Inventaire
-      </label>
-
-      <p id="current_mode_text">Mode actuel : Entrée / Sortie</p>
-    </div>
-
-    <p id="affichage_stock">stock : 0</p>
-
-    <h3>Scanner code-barres</h3>
-
     <input
-      type="text"
-      id="barcode_input"
-      placeholder="Scanner ici"
-      onkeydown="handleBarcodeScan(event)"
-      autofocus
+      id="login_email"
+      type="email"
+      placeholder="Email"
     >
 
-    <p id="barcode_result">Aucun scan</p>
+    <input
+      id="login_password"
+      type="password"
+      placeholder="Mot de passe"
+    >
 
-    <hr>
+    <button onclick="login()">
+      Connexion
+    </button>
 
-    <select id="productSelect">
-      <option value="">-- Sélectionnez un produit --</option>
-    </select>
-
-    <input type="text" id="input_stock" placeholder="+5, -3, 10">
-
-    <button onclick="definirStock()">Définir</button>
-    <button onclick="stock()">+1</button>
-    <button onclick="retrait()">-1</button>
-
-    <hr>
-
-    <h3>Ajouter produit</h3>
-
-    <input id="new_code" placeholder="Code barre">
-    <input id="new_nom" placeholder="Nom">
-    <input id="new_stock" type="number" value="0">
-    <input id="new_stock_min" type="number" value="1">
-    <input id="new_stock_max" type="number" value="7">
-
-    <select id="new_emplacement">
-      <option value="">-- Emplacement --</option>
-      <option value="Bungalow">Bungalow</option>
-      <option value="Container Retrofit">Container Retrofit</option>
-      <option value="Container SAV">Container SAV</option>
-    </select>
-
-    <button onclick="addProduct()">Ajouter</button>
-
-    <hr>
-
-    <h3>Supprimer produit</h3>
-
-    <input id="delete_code" placeholder="Code barre">
-    <button onclick="deleteProduct()">Supprimer</button>
-
-    <hr>
-
-    <div id="product"></div>
+    <p
+      id="login_error"
+      style="color:red; display:none;"
+    >
+      Erreur login
+    </p>
 
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
+  <!-- APP -->
+  <div
+    id="inventory_section"
+    style="display:none;"
+  >
 
-    const supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+    <!-- HEADER -->
+    <div class="topbar">
+
+      <div>
+        <div class="brand">
+          ALSTOM — Gestion de Stock SAV
+        </div>
+
+        <div class="subtitle">
+          Gestion des pièces et inventaire temps réel
+        </div>
+      </div>
+
+      <div class="top-right">
+
+        <div>
+          Technicien SAV
+        </div>
+
+        <button
+          class="logout-btn"
+          onclick="logout()"
+        >
+          Déconnexion
+        </button>
+
+      </div>
+
+    </div>
+
+    <br>
+
+    <!-- DASHBOARD -->
+    <div class="dashboard">
+
+      <div class="card">
+        <div class="card-title">
+          Produits suivis
+        </div>
+
+        <div class="card-value">
+          428
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Stocks critiques
+        </div>
+
+        <div class="card-value">
+          18
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Bungalow
+        </div>
+
+        <div class="card-value">
+          146
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Container SAV
+        </div>
+
+        <div class="card-value">
+          92
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="main-layout">
+
+      <!-- LEFT -->
+      <div>
+
+        <!-- MODE -->
+        <div class="panel">
+
+          <h3>Mode de travail</h3>
+
+          <label>
+            <input
+              type="radio"
+              name="work_mode"
+              value="movement"
+              checked
+            >
+            Entrée / Sortie
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="work_mode"
+              value="inventory"
+            >
+            Inventaire
+          </label>
+
+          <p id="current_mode_text">
+            Mode actuel : Entrée / Sortie
+          </p>
+
+        </div>
+
+        <!-- SCANNER -->
+        <div class="panel">
+
+          <h3>Scanner code-barres</h3>
+
+          <input
+            type="text"
+            id="barcode_input"
+            placeholder="Scanner ici"
+            onkeydown="handleBarcodeScan(event)"
+            autofocus
+          >
+
+          <p id="barcode_result">
+            Aucun scan
+          </p>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="panel">
+
+          <h3>Définir stock</h3>
+
+          <select id="productSelect">
+            <option value="">
+              -- Sélectionnez un produit --
+            </option>
+          </select>
+
+          <input
+            type="text"
+            id="input_stock"
+            placeholder="+5, -3, 10"
+          >
+
+          <button onclick="definirStock()">
+            Définir
+          </button>
+
+          <div class="small-buttons">
+
+            <button onclick="stock()">
+              +1
+            </button>
+
+            <button onclick="retrait()">
+              -1
+            </button>
+
+          </div>
+
+          <p id="affichage_stock">
+            stock : 0
+          </p>
+
+        </div>
+
+        <!-- AJOUT -->
+        <div class="panel">
+
+          <h3>Ajouter produit</h3>
+
+          <input
+            id="new_code"
+            placeholder="Code barre"
+          >
+
+          <input
+            id="new_nom"
+            placeholder="Nom"
+          >
+
+          <input
+            id="new_stock"
+            type="number"
+            value="0"
+          >
+
+          <input
+            id="new_stock_min"
+            type="number"
+            value="1"
+          >
+
+          <input
+            id="new_stock_max"
+            type="number"
+            value="7"
+          >
+
+          <select id="new_emplacement">
+
+            <option value="">
+              -- Emplacement --
+            </option>
+
+            <option value="Bungalow">
+              Bungalow
+            </option>
+
+            <option value="Container Retrofit">
+              Container Retrofit
+            </option>
+
+            <option value="Container SAV">
+              Container SAV
+            </option>
+
+          </select>
+
+          <button onclick="addProduct()">
+            Ajouter
+          </button>
+
+        </div>
+
+        <!-- DELETE -->
+        <div class="panel">
+
+          <h3>Supprimer produit</h3>
+
+          <input
+            id="delete_code"
+            placeholder="Code barre"
+          >
+
+          <button
+            class="danger-btn"
+            onclick="deleteProduct()"
+          >
+            Supprimer
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+
+        <div class="panel">
+
+          <h3>Inventaire des produits</h3>
+
+          <div id="product"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SUPABASE -->
+  <script>
+
+    const SUPABASE_URL =
+      "https://tqpmetwknggpqalbldcl.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
   </script>
 
 </body>
