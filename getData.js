@@ -113,9 +113,7 @@ async function logout() {
 
 function rebuildDropdown() {
   const select = $("productSelect");
-
-  select.innerHTML =
-    '<option value="">-- Sélectionnez un produit --</option>';
+  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
 
   Object.entries(produitsParCode).forEach(([code, info]) => {
     const option = document.createElement("option");
@@ -208,19 +206,16 @@ function renderTable(data) {
 
   const thStock = document.createElement("th");
   const stockSelect = document.createElement("select");
-
   stockSelect.innerHTML = `
     <option value="all">Stock : Tous</option>
     <option value="hide0">Masquer stock 0</option>
     <option value="only0">Seulement stock 0</option>
   `;
-
   stockSelect.value = stockFilterMode;
   stockSelect.onchange = function () {
     stockFilterMode = this.value;
     applyFilters();
   };
-
   thStock.appendChild(stockSelect);
   trHead.appendChild(thStock);
 
@@ -233,22 +228,19 @@ function renderTable(data) {
   trHead.appendChild(thMax);
 
   const thEmplacement = document.createElement("th");
-  const emplacementSelect = document.createElement("select");
-
-  emplacementSelect.innerHTML = `
+  const emplacementFilter = document.createElement("select");
+  emplacementFilter.innerHTML = `
     <option value="all">Emplacement : Tous</option>
     <option value="Bungalow">Bungalow</option>
     <option value="Container Retrofit">Container Retrofit</option>
     <option value="Container SAV">Container SAV</option>
   `;
-
-  emplacementSelect.value = emplacementFilterMode;
-  emplacementSelect.onchange = function () {
+  emplacementFilter.value = emplacementFilterMode;
+  emplacementFilter.onchange = function () {
     emplacementFilterMode = this.value;
     applyFilters();
   };
-
-  thEmplacement.appendChild(emplacementSelect);
+  thEmplacement.appendChild(emplacementFilter);
   trHead.appendChild(thEmplacement);
 
   const thActions = document.createElement("th");
@@ -262,25 +254,54 @@ function renderTable(data) {
     const code = normalizeCode(item.code_barre);
     const tr = document.createElement("tr");
 
-    const valeurs = [
-      code,
-      item.nom || "",
-      item.stock ?? 0,
-      item.stock_min ?? 1,
-      item.stock_max ?? 7,
-      item.emplacement || ""
-    ];
+    const tdCode = document.createElement("td");
+    tdCode.textContent = code;
+    tr.appendChild(tdCode);
 
-    valeurs.forEach((val, index) => {
-      const td = document.createElement("td");
-      td.textContent = val;
+    const tdNom = document.createElement("td");
+    tdNom.textContent = item.nom || "";
+    tr.appendChild(tdNom);
 
-      if (index === 2) {
-        td.classList.add("stockCell");
+    const tdStock = document.createElement("td");
+    tdStock.textContent = item.stock ?? 0;
+    tdStock.classList.add("stockCell");
+    tr.appendChild(tdStock);
+
+    const tdMin = document.createElement("td");
+    tdMin.textContent = item.stock_min ?? 1;
+    tr.appendChild(tdMin);
+
+    const tdMax = document.createElement("td");
+    tdMax.textContent = item.stock_max ?? 7;
+    tr.appendChild(tdMax);
+
+    const tdEmplacement = document.createElement("td");
+    const emplacementSelect = document.createElement("select");
+    emplacementSelect.innerHTML = `
+      <option value="">-- Choisir --</option>
+      <option value="Bungalow">Bungalow</option>
+      <option value="Container Retrofit">Container Retrofit</option>
+      <option value="Container SAV">Container SAV</option>
+    `;
+    emplacementSelect.value = item.emplacement || "";
+
+    emplacementSelect.onchange = async function () {
+      const { error } = await supabaseClient
+        .from("produit")
+        .update({ emplacement: this.value })
+        .eq("code_barre", code);
+
+      if (error) {
+        console.error(error);
+        alert("Erreur changement emplacement.");
+        return;
       }
 
-      tr.appendChild(td);
-    });
+      getData();
+    };
+
+    tdEmplacement.appendChild(emplacementSelect);
+    tr.appendChild(tdEmplacement);
 
     ajouterCelluleActions(tr, code);
 
@@ -299,7 +320,7 @@ function renderTable(data) {
     produitsParCode[code] = {
       nom: item.nom || "",
       row: tr,
-      stockCell: tr.querySelector(".stockCell")
+      stockCell: tdStock
     };
 
     updateRowStatus(tr);
@@ -393,7 +414,7 @@ async function addProduct() {
     return;
   }
 
-  await supabaseClient
+  const { error } = await supabaseClient
     .from("produit")
     .insert([{
       code_barre: code,
@@ -403,6 +424,12 @@ async function addProduct() {
       stock_max: toNum($("new_stock_max").value),
       emplacement: emplacement
     }]);
+
+  if (error) {
+    console.error(error);
+    alert("Erreur ajout produit.");
+    return;
+  }
 
   $("new_code").value = "";
   $("new_nom").value = "";
