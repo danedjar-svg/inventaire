@@ -1,4 +1,4 @@
-alert("NOUVEAU GETDATA CHARGÉ");
+
 
 const LOGIN_KEY = "inventaire_logged_in";
 
