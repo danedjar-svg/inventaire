@@ -7,7 +7,7 @@
   <title>ALSTOM - Stock SAV</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=1000004" defer></script>
+  <script src="getData.js?v=1000005" defer></script>
 
   <style>
     :root {
@@ -35,11 +35,11 @@
 
     input, select, button {
       width: 100%;
-      padding: 10px 12px;
-      margin: 6px 0;
+      padding: 9px 10px;
+      margin: 5px 0;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 8px;
+      font-size: 13px;
     }
 
     button {
@@ -70,35 +70,76 @@
 
     .app-layout {
       display: grid;
-      grid-template-columns: 220px 1fr;
+      grid-template-columns: 310px 1fr;
       min-height: 100vh;
     }
 
     .sidebar {
       background: linear-gradient(180deg, var(--blue-dark), var(--blue));
       color: white;
-      padding: 24px 16px;
+      padding: 20px 14px;
+      overflow-y: auto;
     }
 
     .sidebar-title {
       font-size: 26px;
       font-weight: bold;
       letter-spacing: 1px;
-      margin-bottom: 28px;
+      margin-bottom: 18px;
     }
 
-    .nav-item {
-      padding: 12px 14px;
-      border-radius: 12px;
-      margin-bottom: 8px;
+    .sidebar .panel {
       background: rgba(255,255,255,0.08);
-      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: none;
     }
 
-    .nav-item.active {
-      background: white;
-      color: var(--blue);
+    .sidebar .panel-header {
+      padding: 10px 12px;
       font-weight: bold;
+      color: white;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .sidebar .panel-body {
+      padding: 10px 12px;
+    }
+
+    .sidebar input,
+    .sidebar select {
+      background: rgba(255,255,255,0.95);
+      color: var(--text);
+    }
+
+    .sidebar #barcode_result,
+    .sidebar #affichage_stock,
+    .sidebar #current_mode_text {
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
+    .mode-choice label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+
+    .mode-choice input {
+      width: auto;
+      margin: 0;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .main {
@@ -152,63 +193,12 @@
       color: var(--blue);
     }
 
-    .content-grid {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    .panel {
+    .table-panel {
       background: white;
       border: 1px solid var(--border);
       border-radius: 16px;
       box-shadow: 0 5px 16px rgba(0,0,0,0.05);
-      margin-bottom: 16px;
       overflow: hidden;
-    }
-
-    .panel-header {
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--border);
-      font-weight: bold;
-      color: var(--blue);
-      background: #f8fafc;
-    }
-
-    .panel-body {
-      padding: 15px 16px;
-    }
-
-    .mode-choice label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-
-    .mode-choice input {
-      width: auto;
-      margin: 0;
-    }
-
-    .quick-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    #barcode_result,
-    #affichage_stock,
-    #current_mode_text {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 0;
-    }
-
-    .table-panel {
-      padding: 0;
     }
 
     .table-title {
@@ -288,15 +278,11 @@
       }
 
       .sidebar {
-        display: none;
+        position: relative;
       }
 
       .dashboard {
         grid-template-columns: repeat(2, 1fr);
-      }
-
-      .content-grid {
-        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -322,12 +308,95 @@
     <div class="app-layout">
 
       <aside class="sidebar">
+
         <div class="sidebar-title">ALSTOM</div>
 
-        <div class="nav-item active">Inventaire</div>
-        <div class="nav-item">Entrées / Sorties</div>
-        <div class="nav-item">Emplacements</div>
-        <div class="nav-item">Alertes</div>
+        <div class="panel">
+          <div class="panel-header">Mode</div>
+          <div class="panel-body">
+            <div class="mode-choice">
+              <label>
+                <input type="radio" name="work_mode" value="movement" checked>
+                Entrée / Sortie
+              </label>
+
+              <label>
+                <input type="radio" name="work_mode" value="inventory">
+                Inventaire
+              </label>
+            </div>
+
+            <p id="current_mode_text">Mode actuel : Entrée / Sortie</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Scanner</div>
+          <div class="panel-body">
+            <input
+              type="text"
+              id="barcode_input"
+              placeholder="Scanner ici"
+              onkeydown="handleBarcodeScan(event)"
+              autofocus
+            >
+
+            <p id="barcode_result">Aucun scan</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Stock</div>
+          <div class="panel-body">
+            <select id="productSelect">
+              <option value="">-- Sélectionnez un produit --</option>
+            </select>
+
+            <input
+              type="text"
+              id="input_stock"
+              placeholder="+5, -3, 10"
+            >
+
+            <button onclick="definirStock()">Définir</button>
+
+            <div class="quick-actions">
+              <button onclick="stock()">+1</button>
+              <button onclick="retrait()">-1</button>
+            </div>
+
+            <p id="affichage_stock">stock : 0</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Ajouter</div>
+          <div class="panel-body">
+            <input id="new_code" placeholder="Code barre">
+            <input id="new_nom" placeholder="Nom">
+            <input id="new_stock" type="number" value="0">
+            <input id="new_stock_min" type="number" value="1">
+            <input id="new_stock_max" type="number" value="7">
+
+            <select id="new_emplacement">
+              <option value="">-- Emplacement --</option>
+              <option value="Bungalow">Bungalow</option>
+              <option value="Container Retrofit">Container Retrofit</option>
+              <option value="Container SAV">Container SAV</option>
+            </select>
+
+            <button onclick="addProduct()">Ajouter</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Supprimer</div>
+          <div class="panel-body">
+            <input id="delete_code" placeholder="Code barre">
+            <button class="danger-btn" onclick="deleteProduct()">Supprimer</button>
+          </div>
+        </div>
+
       </aside>
 
       <main class="main">
@@ -362,109 +431,15 @@
           </div>
         </section>
 
-        <section class="content-grid">
-
-          <div>
-
-            <div class="panel">
-              <div class="panel-header">Mode</div>
-              <div class="panel-body">
-                <div class="mode-choice">
-                  <label>
-                    <input type="radio" name="work_mode" value="movement" checked>
-                    Entrée / Sortie
-                  </label>
-
-                  <label>
-                    <input type="radio" name="work_mode" value="inventory">
-                    Inventaire
-                  </label>
-                </div>
-
-                <p id="current_mode_text">Mode actuel : Entrée / Sortie</p>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-header">Scanner</div>
-              <div class="panel-body">
-                <input
-                  type="text"
-                  id="barcode_input"
-                  placeholder="Scanner ici"
-                  onkeydown="handleBarcodeScan(event)"
-                  autofocus
-                >
-
-                <p id="barcode_result">Aucun scan</p>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-header">Stock</div>
-              <div class="panel-body">
-                <select id="productSelect">
-                  <option value="">-- Sélectionnez un produit --</option>
-                </select>
-
-                <input
-                  type="text"
-                  id="input_stock"
-                  placeholder="+5, -3, 10"
-                >
-
-                <button onclick="definirStock()">Définir</button>
-
-                <div class="quick-actions">
-                  <button onclick="stock()">+1</button>
-                  <button onclick="retrait()">-1</button>
-                </div>
-
-                <p id="affichage_stock">stock : 0</p>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-header">Ajouter</div>
-              <div class="panel-body">
-                <input id="new_code" placeholder="Code barre">
-                <input id="new_nom" placeholder="Nom">
-                <input id="new_stock" type="number" value="0">
-                <input id="new_stock_min" type="number" value="1">
-                <input id="new_stock_max" type="number" value="7">
-
-                <select id="new_emplacement">
-                  <option value="">-- Emplacement --</option>
-                  <option value="Bungalow">Bungalow</option>
-                  <option value="Container Retrofit">Container Retrofit</option>
-                  <option value="Container SAV">Container SAV</option>
-                </select>
-
-                <button onclick="addProduct()">Ajouter</button>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-header">Supprimer</div>
-              <div class="panel-body">
-                <input id="delete_code" placeholder="Code barre">
-                <button class="danger-btn" onclick="deleteProduct()">Supprimer</button>
-              </div>
-            </div>
-
+        <div class="table-panel">
+          <div class="table-title">
+            <h2>Inventaire des produits</h2>
           </div>
 
-          <div class="panel table-panel">
-            <div class="table-title">
-              <h2>Inventaire des produits</h2>
-            </div>
-
-            <div class="table-wrapper">
-              <div id="product"></div>
-            </div>
+          <div class="table-wrapper">
+            <div id="product"></div>
           </div>
-
-        </section>
+        </div>
 
       </main>
 
@@ -474,7 +449,7 @@
 
   <script>
     const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
-    const SUPABASE_KEY = "COLLE_TA_VRAIE_CLE_ICI";
+    const SUPABASE_KEY = "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
 
     const supabaseClient = window.supabase.createClient(
       SUPABASE_URL,
