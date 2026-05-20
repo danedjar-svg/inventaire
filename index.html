@@ -2,641 +2,82 @@
 <html lang="fr">
 
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>ALSTOM - Gestion de Stock SAV</title>
-
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000002" defer></script>
-
-  <style>
-
-    :root {
-
-      --blue-dark: #002b5c;
-      --blue: #003b73;
-      --blue-light: #005eb8;
-
-      --bg: #f3f5f9;
-
-      --card: #ffffff;
-
-      --border: #e2e8f0;
-
-      --text: #1e293b;
-
-      --green: #dff5df;
-      --orange: #fff1d6;
-      --red: #ffdede;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-
-      margin: 0;
-
-      font-family: Arial, Helvetica, sans-serif;
-
-      background: var(--bg);
-
-      color: var(--text);
-    }
-
-    /* ===================== */
-    /* LOGIN */
-    /* ===================== */
-
-    #login_section {
-
-      width: 400px;
-
-      margin: 100px auto;
-
-      background: white;
-
-      padding: 30px;
-
-      border-radius: 18px;
-
-      box-shadow:
-        0 10px 30px rgba(0,0,0,0.12);
-    }
-
-    #login_section h2 {
-
-      margin-top: 0;
-
-      color: var(--blue);
-    }
-
-    input,
-    select,
-    button {
-
-      width: 100%;
-
-      padding: 10px 12px;
-
-      margin: 6px 0;
-
-      border-radius: 10px;
-
-      border: 1px solid var(--border);
-
-      font-size: 14px;
-    }
-
-    button {
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--blue-light),
-          var(--blue)
-        );
-
-      color: white;
-
-      border: none;
-
-      font-weight: bold;
-
-      cursor: pointer;
-    }
-
-    button:hover {
-
-      opacity: 0.95;
-    }
-
-    /* ===================== */
-    /* APP */
-    /* ===================== */
-
-    .app {
-
-      display: grid;
-
-      grid-template-columns:
-        240px 1fr;
-
-      min-height: 100vh;
-    }
-
-    /* ===================== */
-    /* SIDEBAR */
-    /* ===================== */
-
-    .sidebar {
-
-      background: white;
-
-      border-right:
-        1px solid var(--border);
-
-      display: flex;
-
-      flex-direction: column;
-
-      padding: 20px 0;
-
-      border-top-right-radius: 24px;
-
-      overflow: hidden;
-
-      box-shadow:
-        4px 0 18px rgba(0,0,0,0.05);
-    }
-
-    .logo {
-
-      padding: 0 24px 24px 24px;
-
-      border-bottom:
-        1px solid var(--border);
-
-      margin-bottom: 20px;
-
-      font-size: 34px;
-
-      font-weight: bold;
-
-      color: var(--blue);
-    }
-
-    .menu {
-
-      padding: 0 14px;
-
-      flex: 1;
-    }
-
-    .menu-item {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 12px;
-
-      padding: 14px 16px;
-
-      border-radius: 12px;
-
-      margin-bottom: 8px;
-
-      font-weight: 500;
-
-      cursor: pointer;
-    }
-
-    .menu-item.active {
-
-      background: #e8f1ff;
-
-      color: var(--blue);
-
-      font-weight: bold;
-
-      border-left:
-        4px solid var(--blue-light);
-    }
-
-    .menu-item:hover {
-
-      background: #f3f7fd;
-    }
-
-    .sidebar-footer {
-
-      padding: 20px;
-
-      border-top:
-        1px solid var(--border);
-
-      font-size: 12px;
-
-      color: #64748b;
-    }
-
-    /* ===================== */
-    /* MAIN */
-    /* ===================== */
-
-    .main {
-
-      padding: 0;
-    }
-
-    /* ===================== */
-    /* TOPBAR */
-    /* ===================== */
-
-    .topbar {
-
-      background:
-        linear-gradient(
-          90deg,
-          var(--blue-dark),
-          var(--blue)
-        );
-
-      color: white;
-
-      padding: 22px 28px;
-
-      display: flex;
-
-      justify-content: space-between;
-
-      align-items: center;
-
-      margin-bottom: 20px;
-
-      border-bottom-left-radius: 24px;
-    }
-
-    .topbar h1 {
-
-      margin: 0;
-
-      font-size: 28px;
-    }
-
-    .topbar-right {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 18px;
-    }
-
-    .logout-btn {
-
-      width: auto;
-
-      padding: 10px 16px;
-
-      background: rgba(255,255,255,0.16);
-
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    /* ===================== */
-    /* DASHBOARD */
-    /* ===================== */
-
-    .dashboard {
-
-      display: grid;
-
-      grid-template-columns:
-        repeat(5, 1fr);
-
-      gap: 16px;
-
-      margin-bottom: 20px;
-
-      padding: 0 20px;
-    }
-
-    .stat-card {
-
-      background: white;
-
-      border-radius: 18px;
-
-      padding: 20px;
-
-      border:
-        1px solid var(--border);
-
-      box-shadow:
-        0 5px 16px rgba(0,0,0,0.05);
-    }
-
-    .stat-title {
-
-      font-size: 13px;
-
-      color: #64748b;
-
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-
-      font-size: 32px;
-
-      font-weight: bold;
-
-      color: var(--blue);
-    }
-
-    /* ===================== */
-    /* CONTENT */
-    /* ===================== */
-
-    .content {
-
-      display: grid;
-
-      grid-template-columns:
-        1fr 340px;
-
-      gap: 18px;
-
-      padding: 0 20px 20px 20px;
-    }
-
-    /* ===================== */
-    /* TABLE CARD */
-    /* ===================== */
-
-    .card {
-
-      background: white;
-
-      border-radius: 18px;
-
-      border:
-        1px solid var(--border);
-
-      box-shadow:
-        0 5px 16px rgba(0,0,0,0.05);
-
-      overflow: hidden;
-    }
-
-    .card-header {
-
-      padding: 18px 20px;
-
-      border-bottom:
-        1px solid var(--border);
-
-      display: flex;
-
-      justify-content: space-between;
-
-      align-items: center;
-    }
-
-    .card-header h2 {
-
-      margin: 0;
-
-      font-size: 22px;
-
-      color: var(--blue);
-    }
-
-    .search-bar {
-
-      width: 380px;
-    }
-
-    .filters {
-
-      display: flex;
-
-      gap: 12px;
-
-      padding: 16px 20px;
-
-      border-bottom:
-        1px solid var(--border);
-
-      flex-wrap: wrap;
-    }
-
-    .filters select {
-
-      width: auto;
-
-      min-width: 180px;
-    }
-
-    .table-wrapper {
-
-      overflow-x: auto;
-    }
-
-    /* ===================== */
-    /* TABLE */
-    /* ===================== */
-
-    #product table {
-
-      width: 100%;
-
-      border-collapse: collapse;
-
-      min-width: 1000px;
-    }
-
-    #product th {
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--blue),
-          var(--blue-light)
-        );
-
-      color: white;
-
-      padding: 12px;
-
-      text-align: left;
-
-      font-size: 13px;
-    }
-
-    #product td {
-
-      padding: 10px 12px;
-
-      border-bottom:
-        1px solid #edf2f7;
-
-      font-size: 13px;
-    }
-
-    #product tr:hover td {
-
-      background: #eef6ff;
-    }
-
-    #product td button {
-
-      width: auto;
-
-      padding: 6px 10px;
-
-      margin: 0 2px;
-
-      border-radius: 8px;
-    }
-
-    tr.status-good td {
-
-      background:
-        var(--green);
-    }
-
-    tr.status-warning td {
-
-      background:
-        var(--orange);
-    }
-
-    tr.status-danger td {
-
-      background:
-        var(--red);
-    }
-
-    /* ===================== */
-    /* RIGHT PANEL */
-    /* ===================== */
-
-    .right-panel {
-
-      display: flex;
-
-      flex-direction: column;
-
-      gap: 16px;
-    }
-
-    .side-card {
-
-      background: white;
-
-      border-radius: 18px;
-
-      border:
-        1px solid var(--border);
-
-      box-shadow:
-        0 5px 16px rgba(0,0,0,0.05);
-
-      padding: 18px;
-    }
-
-    .side-card h3 {
-
-      margin-top: 0;
-
-      color: var(--blue);
-    }
-
-    .quick-buttons {
-
-      display: grid;
-
-      grid-template-columns:
-        1fr 1fr;
-
-      gap: 10px;
-    }
-
-    @media (max-width: 1400px) {
-
-      .content {
-
-        grid-template-columns: 1fr;
-      }
-
-      .dashboard {
-
-        grid-template-columns:
-          repeat(2, 1fr);
-      }
-    }
-
-  </style>
-
+  <script src="getData.js?v=2000003" defer></script>
 </head>
 
 <body>
 
   <!-- LOGIN -->
   <div id="login_section">
-
-    <h2>Connexion</h2>
-
-    <input
-      id="login_email"
-      type="email"
-      placeholder="Email"
-    >
-
-    <input
-      id="login_password"
-      type="password"
-      placeholder="Mot de passe"
-    >
-
-    <button onclick="login()">
-      Connexion
-    </button>
-
-    <p
-      id="login_error"
-      style="display:none;color:red;"
-    >
-      Erreur login
-    </p>
-
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-mark">AL</div>
+        <div>
+          <div class="logo-text">ALSTOM</div>
+          <div class="logo-sub">Gestion de Stock SAV</div>
+        </div>
+      </div>
+      <h2>Connexion</h2>
+      <input id="login_email" type="email" placeholder="Adresse email">
+      <input id="login_password" type="password" placeholder="Mot de passe">
+      <button onclick="login()">Se connecter</button>
+      <p id="login_error" style="display:none;">Identifiants incorrects. Veuillez réessayer.</p>
+    </div>
   </div>
 
   <!-- APP -->
-  <div
-    id="inventory_section"
-    style="display:none;"
-  >
-
+  <div id="inventory_section" style="display:none;">
     <div class="app">
 
       <!-- SIDEBAR -->
       <aside class="sidebar">
-
-        <div class="logo">
-          ALSTOM
+        <div class="sidebar-logo">
+          <div class="logo-mark">AL</div>
+          <div>
+            <div class="logo-text">ALSTOM</div>
+            <div class="logo-sub">Stock SAV</div>
+          </div>
         </div>
 
-        <div class="menu">
-
+        <nav class="sidebar-nav">
+          <div class="nav-label">Gestion</div>
           <div class="menu-item active">
-            📋 Inventaire
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Inventaire
           </div>
-
           <div class="menu-item">
-            🔄 Entrée / Sortie
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+            Entrée / Sortie
           </div>
-
           <div class="menu-item">
-            📦 Produits
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Produits
           </div>
-
+          <div class="nav-label" style="margin-top:12px;">Analyse</div>
           <div class="menu-item">
-            🕒 Historique
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Historique
           </div>
-
-        </div>
+        </nav>
 
         <div class="sidebar-footer">
-          SAV
+          <div class="avatar">D</div>
+          <div class="avatar-info">
+            <div class="avatar-name">Dalila</div>
+            <div class="avatar-role">Opérateur SAV</div>
+          </div>
+          <button class="logout-icon-btn" onclick="logout()" title="Déconnexion">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
-
       </aside>
 
       <!-- MAIN -->
@@ -644,218 +85,169 @@
 
         <!-- TOPBAR -->
         <div class="topbar">
-
-          <div>
-            <h1>Gestion de Stock SAV</h1>
+          <div class="topbar-left">
+            <span class="breadcrumb">SAV /</span>
+            <span class="page-title">Inventaire</span>
           </div>
-
           <div class="topbar-right">
-
-            <div>
-              👤 Dalila
+            <div class="mode-pill">
+              <label class="mode-option">
+                <input type="radio" name="work_mode" value="movement" checked>
+                <span>Entrée / Sortie</span>
+              </label>
+              <label class="mode-option">
+                <input type="radio" name="work_mode" value="inventory">
+                <span>Inventaire</span>
+              </label>
             </div>
-
-            <button
-              class="logout-btn"
-              onclick="logout()"
-            >
-              Déconnexion
-            </button>
-
+            <div id="current_mode_text" class="mode-indicator">Mode actuel : Entrée / Sortie</div>
           </div>
-
         </div>
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD KPI -->
         <section class="dashboard">
-
-          <div class="stat-card">
-            <div class="stat-title">
-              Produits
+          <div class="kpi-card blue">
+            <div class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             </div>
-
-            <div class="stat-value">
-              428
-            </div>
+            <div class="kpi-label">Produits</div>
+            <div class="kpi-value">428</div>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-title">
-              Stock total
+          <div class="kpi-card green">
+            <div class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </div>
-
-            <div class="stat-value">
-              2842
-            </div>
+            <div class="kpi-label">Stock total</div>
+            <div class="kpi-value">2842</div>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-title">
-              Critiques
+          <div class="kpi-card red">
+            <div class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
-
-            <div class="stat-value">
-              12
-            </div>
+            <div class="kpi-label">Critiques</div>
+            <div class="kpi-value">12</div>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-title">
-              Bungalow
+          <div class="kpi-card amber">
+            <div class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             </div>
-
-            <div class="stat-value">
-              220
-            </div>
+            <div class="kpi-label">Bungalow</div>
+            <div class="kpi-value">220</div>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-title">
-              SAV
+          <div class="kpi-card purple">
+            <div class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
             </div>
-
-            <div class="stat-value">
-              80
-            </div>
+            <div class="kpi-label">SAV</div>
+            <div class="kpi-value">80</div>
           </div>
-
         </section>
 
         <!-- CONTENT -->
         <section class="content">
 
-          <!-- TABLE -->
+          <!-- TABLE CARD -->
           <div class="card">
-
             <div class="card-header">
-
-              <h2>
-                Produits
-              </h2>
-
-              <input
-                class="search-bar"
-                placeholder="Rechercher..."
-              >
-
+              <h2>Liste des produits</h2>
+              <input class="search-bar" placeholder="Rechercher un produit ou code barre...">
             </div>
-
-            <div class="filters">
-
-              <select>
-                <option>
-                  Stock : Tous
-                </option>
-              </select>
-
-              <select>
-                <option>
-                  Emplacement : Tous
-                </option>
-              </select>
-
-            </div>
-
             <div class="table-wrapper">
-
               <div id="product"></div>
-
             </div>
-
           </div>
 
-          <!-- RIGHT -->
+          <!-- RIGHT PANEL -->
           <div class="right-panel">
 
+            <!-- SCANNER -->
             <div class="side-card">
-
               <h3>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12"/><line x1="12" y1="12" x2="12" y2="12"/><line x1="17" y1="12" x2="17" y2="12"/></svg>
                 Scanner
               </h3>
-
               <input
                 type="text"
                 id="barcode_input"
-                placeholder="Scanner ici"
+                class="scanner-input"
+                placeholder="Scanner le code barre ici..."
                 onkeydown="handleBarcodeScan(event)"
                 autofocus
               >
-
-              <p id="barcode_result">
-                Aucun scan
-              </p>
-
+              <div class="scan-result" id="barcode_result">Aucun scan récent</div>
             </div>
 
+            <!-- STOCK CONTROL -->
             <div class="side-card">
-
               <h3>
-                Stock
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                Ajuster le stock
               </h3>
-
-              <select id="productSelect">
-
-                <option value="">
-                  -- Produit --
-                </option>
-
-              </select>
-
-              <input
-                type="text"
-                id="input_stock"
-                placeholder="+5, -3, 10"
-              >
-
-              <button onclick="definirStock()">
-                Valider
-              </button>
-
-              <div class="quick-buttons">
-
-                <button onclick="stock()">
-                  +1
-                </button>
-
-                <button onclick="retrait()">
-                  -1
-                </button>
-
+              <div class="stock-control">
+                <select id="productSelect">
+                  <option value="">-- Sélectionnez un produit --</option>
+                </select>
+                <div class="current-stock-display">
+                  <span class="current-stock-label">Stock actuel</span>
+                  <span id="affichage_stock" class="current-stock-value">0</span>
+                </div>
+                <input type="text" id="input_stock" placeholder="Quantité : ex. 5, -3, 10">
+                <div class="quick-grid">
+                  <button class="quick-plus" onclick="stock()">+ 1</button>
+                  <button class="quick-minus" onclick="retrait()">− 1</button>
+                </div>
+                <button class="validate-btn" onclick="definirStock()">Valider</button>
               </div>
+            </div>
 
-              <p id="affichage_stock">
-                stock : 0
-              </p>
+            <!-- ADD PRODUCT -->
+            <div class="side-card">
+              <h3>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                Ajouter un produit
+              </h3>
+              <div class="add-form">
+                <input type="text" id="new_code" placeholder="Code barre">
+                <input type="text" id="new_nom" placeholder="Nom du produit">
+                <div class="add-form-grid">
+                  <input type="number" id="new_stock" placeholder="Stock" value="0">
+                  <input type="number" id="new_stock_min" placeholder="Min" value="1">
+                  <input type="number" id="new_stock_max" placeholder="Max" value="7">
+                </div>
+                <select id="new_emplacement">
+                  <option value="">-- Emplacement --</option>
+                  <option value="Bungalow">Bungalow</option>
+                  <option value="Container Retrofit">Container Retrofit</option>
+                  <option value="Container SAV">Container SAV</option>
+                </select>
+                <button class="add-btn" onclick="addProduct()">Ajouter le produit</button>
+              </div>
+            </div>
 
+            <!-- DELETE PRODUCT -->
+            <div class="side-card side-card-danger">
+              <h3>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                Supprimer un produit
+              </h3>
+              <div class="add-form">
+                <input type="text" id="delete_code" placeholder="Code barre à supprimer">
+                <button class="delete-btn" onclick="deleteProduct()">Supprimer</button>
+              </div>
             </div>
 
           </div>
-
         </section>
-
       </main>
-
     </div>
-
   </div>
 
   <!-- SUPABASE -->
   <script>
-
-    const SUPABASE_URL =
-      "https://tqpmetwknggpqalbldcl.supabase.co";
-
-    const SUPABASE_KEY =
-      "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
-
-    const supabaseClient =
-      window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-      );
-
+    const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   </script>
 
 </body>
-
 </html>
