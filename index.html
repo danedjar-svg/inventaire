@@ -2,13 +2,14 @@
 <html lang="fr">
 
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>ALSTOM - Gestion de Stock SAV</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000001" defer></script>
+  <script src="getData.js?v=2000002" defer></script>
 
   <style>
 
@@ -143,6 +144,13 @@
       flex-direction: column;
 
       padding: 20px 0;
+
+      border-top-right-radius: 24px;
+
+      overflow: hidden;
+
+      box-shadow:
+        4px 0 18px rgba(0,0,0,0.05);
     }
 
     .logo {
@@ -189,7 +197,7 @@
 
     .menu-item.active {
 
-      background: var(--blue-soft, #e8f1ff);
+      background: #e8f1ff;
 
       color: var(--blue);
 
@@ -222,7 +230,7 @@
 
     .main {
 
-      padding: 20px;
+      padding: 0;
     }
 
     /* ===================== */
@@ -240,9 +248,7 @@
 
       color: white;
 
-      border-radius: 18px;
-
-      padding: 18px 24px;
+      padding: 22px 28px;
 
       display: flex;
 
@@ -251,6 +257,8 @@
       align-items: center;
 
       margin-bottom: 20px;
+
+      border-bottom-left-radius: 24px;
     }
 
     .topbar h1 {
@@ -294,6 +302,8 @@
       gap: 16px;
 
       margin-bottom: 20px;
+
+      padding: 0 20px;
     }
 
     .stat-card {
@@ -341,6 +351,8 @@
         1fr 340px;
 
       gap: 18px;
+
+      padding: 0 20px 20px 20px;
     }
 
     /* ===================== */
@@ -526,45 +538,6 @@
       color: var(--blue);
     }
 
-    .mode-buttons {
-
-      display: flex;
-
-      flex-direction: column;
-
-      gap: 10px;
-    }
-
-    .mode-btn {
-
-      padding: 12px;
-
-      border-radius: 12px;
-
-      border:
-        2px solid var(--border);
-
-      background: white;
-
-      cursor: pointer;
-
-      font-weight: bold;
-    }
-
-    .mode-btn.active {
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--blue-light),
-          var(--blue)
-        );
-
-      color: white;
-
-      border: none;
-    }
-
     .quick-buttons {
 
       display: grid;
@@ -574,10 +547,6 @@
 
       gap: 10px;
     }
-
-    /* ===================== */
-    /* RESPONSIVE */
-    /* ===================== */
 
     @media (max-width: 1400px) {
 
@@ -647,10 +616,6 @@
         <div class="menu">
 
           <div class="menu-item active">
-            🏠 Tableau de bord
-          </div>
-
-          <div class="menu-item">
             📋 Inventaire
           </div>
 
@@ -666,14 +631,10 @@
             🕒 Historique
           </div>
 
-          <div class="menu-item">
-            ⚙️ Paramètres
-          </div>
-
         </div>
 
         <div class="sidebar-footer">
-          ALSTOM - SAV
+          SAV
         </div>
 
       </aside>
@@ -710,7 +671,7 @@
 
           <div class="stat-card">
             <div class="stat-title">
-              Produits totaux
+              Produits
             </div>
 
             <div class="stat-value">
@@ -730,7 +691,7 @@
 
           <div class="stat-card">
             <div class="stat-title">
-              Produits critiques
+              Critiques
             </div>
 
             <div class="stat-value">
@@ -750,7 +711,7 @@
 
           <div class="stat-card">
             <div class="stat-title">
-              Container SAV
+              SAV
             </div>
 
             <div class="stat-value">
@@ -769,7 +730,7 @@
             <div class="card-header">
 
               <h2>
-                Liste des produits
+                Produits
               </h2>
 
               <input
@@ -806,11 +767,10 @@
           <!-- RIGHT -->
           <div class="right-panel">
 
-            <!-- SCANNER -->
             <div class="side-card">
 
               <h3>
-                Scanner code-barres
+                Scanner
               </h3>
 
               <input
@@ -827,42 +787,16 @@
 
             </div>
 
-            <!-- MODE -->
             <div class="side-card">
 
               <h3>
-                Mode de travail
-              </h3>
-
-              <div class="mode-buttons">
-
-                <button
-                  class="mode-btn active"
-                >
-                  Entrée / Sortie
-                </button>
-
-                <button
-                  class="mode-btn"
-                >
-                  Inventaire
-                </button>
-
-              </div>
-
-            </div>
-
-            <!-- STOCK -->
-            <div class="side-card">
-
-              <h3>
-                Définir stock
+                Stock
               </h3>
 
               <select id="productSelect">
 
                 <option value="">
-                  -- Sélectionner un produit --
+                  -- Produit --
                 </option>
 
               </select>
@@ -892,88 +826,6 @@
               <p id="affichage_stock">
                 stock : 0
               </p>
-
-            </div>
-
-            <!-- ADD -->
-            <div class="side-card">
-
-              <h3>
-                Ajouter produit
-              </h3>
-
-              <input
-                id="new_code"
-                placeholder="Code barre"
-              >
-
-              <input
-                id="new_nom"
-                placeholder="Nom"
-              >
-
-              <input
-                id="new_stock"
-                type="number"
-                value="0"
-              >
-
-              <input
-                id="new_stock_min"
-                type="number"
-                value="1"
-              >
-
-              <input
-                id="new_stock_max"
-                type="number"
-                value="7"
-              >
-
-              <select id="new_emplacement">
-
-                <option value="">
-                  -- Emplacement --
-                </option>
-
-                <option value="Bungalow">
-                  Bungalow
-                </option>
-
-                <option value="Container Retrofit">
-                  Container Retrofit
-                </option>
-
-                <option value="Container SAV">
-                  Container SAV
-                </option>
-
-              </select>
-
-              <button onclick="addProduct()">
-                Ajouter
-              </button>
-
-            </div>
-
-            <!-- DELETE -->
-            <div class="side-card">
-
-              <h3>
-                Supprimer produit
-              </h3>
-
-              <input
-                id="delete_code"
-                placeholder="Code barre"
-              >
-
-              <button
-                class="danger-btn"
-                onclick="deleteProduct()"
-              >
-                Supprimer
-              </button>
 
             </div>
 
