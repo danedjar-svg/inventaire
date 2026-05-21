@@ -434,7 +434,7 @@ body {
 
 .content {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 220px;
   gap: 18px;
   padding: 16px 24px 24px;
   flex: 1;
@@ -1008,3 +1008,66 @@ tr.status-danger:hover td  { filter: brightness(0.97); }
 }
 
 .modal-delete-preview svg { stroke: var(--red-text); flex-shrink: 0; }
+
+/* ===================== CONTENT FULL WIDTH ===================== */
+
+.content-full {
+  grid-template-columns: 1fr !important;
+}
+
+/* ===================== SIDEBAR SCANNER ===================== */
+
+.sidebar-scanner {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-scanner-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 8px;
+}
+
+.sidebar-scanner-label svg { stroke: rgba(255,255,255,0.45); }
+
+.sidebar-scanner-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px dashed rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.sidebar-scanner-input::placeholder { color: rgba(255,255,255,0.35); }
+
+.sidebar-scanner-input:focus {
+  outline: none;
+  border-color: rgba(255,255,255,0.6);
+  border-style: solid;
+  background: rgba(255,255,255,0.12);
+}
+
+.sidebar-scan-result {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 6px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+}
