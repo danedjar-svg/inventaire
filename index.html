@@ -5,10 +5,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ALSTOM - Gestion de Stock SAV</title>
+
   <link rel="stylesheet" href="style.css">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="getData.js?v=2000003" defer></script>
 </head>
@@ -18,29 +22,41 @@
   <!-- LOGIN -->
   <div id="login_section">
     <div class="login-card">
+
       <div class="login-logo">
         <div class="logo-mark">AL</div>
+
         <div>
           <div class="logo-text">ALSTOM</div>
           <div class="logo-sub">Gestion de Stock SAV</div>
         </div>
       </div>
+
       <h2>Connexion</h2>
+
       <input id="login_email" type="email" placeholder="Adresse email">
       <input id="login_password" type="password" placeholder="Mot de passe">
+
       <button onclick="login()">Se connecter</button>
-      <p id="login_error" style="display:none;">Identifiants incorrects. Veuillez réessayer.</p>
+
+      <p id="login_error" style="display:none;">
+        Identifiants incorrects. Veuillez réessayer.
+      </p>
+
     </div>
   </div>
 
   <!-- APP -->
   <div id="inventory_section" style="display:none;">
+
     <div class="app">
 
       <!-- SIDEBAR -->
       <aside class="sidebar">
+
         <div class="sidebar-logo">
           <div class="logo-mark">AL</div>
+
           <div>
             <div class="logo-text">ALSTOM</div>
             <div class="logo-sub">Stock SAV</div>
@@ -48,36 +64,38 @@
         </div>
 
         <nav class="sidebar-nav">
+
           <div class="nav-label">Gestion</div>
+
           <div class="menu-item active" data-mode="inventory">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Inventaire
           </div>
+
           <div class="menu-item" data-mode="movement">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
             Entrée / Sortie
           </div>
+
           <div class="menu-item" onclick="openModalProduits()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Produits
           </div>
-          <div class="nav-label" style="margin-top:12px;">Analyse</div>
-          <div class="menu-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Historique
-          </div>
+
         </nav>
 
         <div class="sidebar-footer">
+
           <div class="avatar">D</div>
+
           <div class="avatar-info">
             <div class="avatar-name">Dalila</div>
             <div class="avatar-role">Opérateur SAV</div>
           </div>
-          <button class="logout-icon-btn" onclick="logout()" title="Déconnexion">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+
+          <button class="logout-icon-btn" onclick="logout()">
+            Déconnexion
           </button>
+
         </div>
+
       </aside>
 
       <!-- MAIN -->
@@ -85,87 +103,103 @@
 
         <!-- TOPBAR -->
         <div class="topbar">
+
           <div class="topbar-left">
             <span class="breadcrumb">SAV /</span>
             <span class="page-title">Inventaire</span>
           </div>
+
           <div class="topbar-right">
+
             <div class="mode-pill">
+
               <label class="mode-option">
                 <input type="radio" name="work_mode" value="movement" checked>
                 <span>Entrée / Sortie</span>
               </label>
+
               <label class="mode-option">
                 <input type="radio" name="work_mode" value="inventory">
                 <span>Inventaire</span>
               </label>
+
             </div>
-            <div id="current_mode_text" class="mode-indicator">Mode actuel : Entrée / Sortie</div>
+
+            <div id="current_mode_text" class="mode-indicator">
+              Mode actuel : Entrée / Sortie
+            </div>
+
           </div>
+
         </div>
 
-        <!-- DASHBOARD KPI -->
+        <!-- DASHBOARD -->
         <section class="dashboard">
+
           <div class="kpi-card blue">
-            <div class="kpi-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            </div>
+            <div class="kpi-icon"></div>
             <div class="kpi-label">Produits</div>
             <div class="kpi-value">428</div>
           </div>
+
           <div class="kpi-card green">
-            <div class="kpi-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            </div>
+            <div class="kpi-icon"></div>
             <div class="kpi-label">Stock total</div>
             <div class="kpi-value">2842</div>
           </div>
+
           <div class="kpi-card red">
-            <div class="kpi-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
+            <div class="kpi-icon"></div>
             <div class="kpi-label">Critiques</div>
             <div class="kpi-value">12</div>
           </div>
+
           <div class="kpi-card amber">
-            <div class="kpi-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
+            <div class="kpi-icon"></div>
             <div class="kpi-label">Bungalow</div>
             <div class="kpi-value">220</div>
           </div>
+
+          <!-- NOUVELLE CASE RETROFIT -->
+          <div class="kpi-card teal">
+            <div class="kpi-icon"></div>
+            <div class="kpi-label">Retrofit</div>
+            <div class="kpi-value">0</div>
+          </div>
+
           <div class="kpi-card purple">
-            <div class="kpi-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            </div>
+            <div class="kpi-icon"></div>
             <div class="kpi-label">SAV</div>
             <div class="kpi-value">80</div>
           </div>
+
         </section>
 
         <!-- CONTENT -->
         <section class="content">
 
-          <!-- TABLE CARD -->
           <div class="card">
+
             <div class="card-header">
               <h2>Liste des produits</h2>
-              <input class="search-bar" placeholder="Rechercher un produit ou code barre...">
+
+              <input class="search-bar"
+                placeholder="Rechercher un produit ou code barre...">
             </div>
+
             <div class="table-wrapper">
               <div id="product"></div>
             </div>
+
           </div>
 
           <!-- RIGHT PANEL -->
           <div class="right-panel">
 
-            <!-- SCANNER -->
             <div class="side-card">
-              <h3>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12"/><line x1="12" y1="12" x2="12" y2="12"/><line x1="17" y1="12" x2="17" y2="12"/></svg>
-                Scanner
-              </h3>
+
+              <h3>Scanner</h3>
+
               <input
                 type="text"
                 id="barcode_input"
@@ -174,165 +208,35 @@
                 onkeydown="handleBarcodeScan(event)"
                 autofocus
               >
-              <div class="scan-result" id="barcode_result">Aucun scan récent</div>
+
+              <div class="scan-result" id="barcode_result">
+                Aucun scan récent
+              </div>
+
             </div>
 
           </div>
+
         </section>
+
       </main>
-    </div>
-  </div>
-
-  <!-- MODAL PRODUITS -->
-  <div id="modal_produits" style="display:none;" class="modal-overlay" onclick="closeModalProduits(event)">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Gestion des produits
-        </h2>
-        <button class="modal-close" onclick="closeModalProduits()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-
-      <div class="modal-tabs">
-        <button class="modal-tab active" onclick="switchModalTab('add', this)">Ajouter</button>
-        <button class="modal-tab" onclick="switchModalTab('edit', this)">Modifier</button>
-        <button class="modal-tab" onclick="switchModalTab('delete', this)">Supprimer</button>
-        <button class="modal-tab" onclick="switchModalTab('stock', this)">Ajuster stock</button>
-      </div>
-
-      <!-- TAB AJOUTER -->
-      <div id="modal_tab_add" class="modal-tab-content">
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Code barre</label>
-            <input type="text" id="m_new_code" placeholder="Ex: 520059001">
-          </div>
-          <div class="modal-field">
-            <label>Nom du produit</label>
-            <input type="text" id="m_new_nom" placeholder="Ex: Capteur infrarouge">
-          </div>
-          <div class="modal-field-row">
-            <div class="modal-field">
-              <label>Stock initial</label>
-              <input type="number" id="m_new_stock" value="0">
-            </div>
-            <div class="modal-field">
-              <label>Stock min</label>
-              <input type="number" id="m_new_stock_min" value="1">
-            </div>
-            <div class="modal-field">
-              <label>Stock max</label>
-              <input type="number" id="m_new_stock_max" value="7">
-            </div>
-          </div>
-          <div class="modal-field">
-            <label>Emplacement</label>
-            <select id="m_new_emplacement">
-              <option value="">-- Choisir --</option>
-              <option value="Bungalow">Bungalow</option>
-              <option value="Container Retrofit">Container Retrofit</option>
-              <option value="Container SAV">Container SAV</option>
-            </select>
-          </div>
-          <button class="modal-btn-green" onclick="modalAddProduct()">Ajouter le produit</button>
-        </div>
-      </div>
-
-      <!-- TAB MODIFIER -->
-      <div id="modal_tab_edit" class="modal-tab-content" style="display:none;">
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Rechercher le produit</label>
-            <select id="m_edit_select" onchange="fillEditForm()">
-              <option value="">-- Sélectionnez un produit --</option>
-            </select>
-          </div>
-          <div id="m_edit_fields" style="display:none;">
-            <div class="modal-field">
-              <label>Nom du produit</label>
-              <input type="text" id="m_edit_nom" placeholder="Nom">
-            </div>
-            <div class="modal-field-row">
-              <div class="modal-field">
-                <label>Stock min</label>
-                <input type="number" id="m_edit_stock_min">
-              </div>
-              <div class="modal-field">
-                <label>Stock max</label>
-                <input type="number" id="m_edit_stock_max">
-              </div>
-            </div>
-            <div class="modal-field">
-              <label>Emplacement</label>
-              <select id="m_edit_emplacement">
-                <option value="">-- Choisir --</option>
-                <option value="Bungalow">Bungalow</option>
-                <option value="Container Retrofit">Container Retrofit</option>
-                <option value="Container SAV">Container SAV</option>
-              </select>
-            </div>
-            <button class="modal-btn-blue" onclick="modalEditProduct()">Enregistrer les modifications</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB SUPPRIMER -->
-      <div id="modal_tab_delete" class="modal-tab-content" style="display:none;">
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Sélectionner le produit à supprimer</label>
-            <select id="m_delete_select" onchange="fillDeleteInfo()">
-              <option value="">-- Sélectionnez un produit --</option>
-            </select>
-          </div>
-          <div id="m_delete_info" style="display:none;">
-            <div class="modal-delete-preview">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span id="m_delete_label">—</span>
-            </div>
-            <button class="modal-btn-red" onclick="modalDeleteProduct()">Confirmer la suppression</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB AJUSTER STOCK -->
-      <div id="modal_tab_stock" class="modal-tab-content" style="display:none;">
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Sélectionner un produit</label>
-            <select id="m_stock_select" onchange="modalFillStock()">
-              <option value="">-- Sélectionnez un produit --</option>
-            </select>
-          </div>
-          <div id="m_stock_fields" style="display:none;">
-            <div class="current-stock-display" style="margin-bottom:4px;">
-              <span class="current-stock-label">Stock actuel</span>
-              <span id="m_affichage_stock" class="current-stock-value">0</span>
-            </div>
-            <div class="modal-field">
-              <label>Définir une quantité exacte</label>
-              <input type="number" id="m_input_stock" placeholder="Ex: 5">
-            </div>
-            <div class="quick-grid">
-              <button class="quick-plus" onclick="modalStockPlus()">+ 1</button>
-              <button class="quick-minus" onclick="modalStockMoins()">− 1</button>
-            </div>
-            <button class="modal-btn-blue" onclick="modalDefinirStock()">Valider</button>
-          </div>
-        </div>
-      </div>
 
     </div>
+
   </div>
 
   <!-- SUPABASE -->
   <script>
     const SUPABASE_URL = "https://tqpmetwknggpqalbldcl.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const SUPABASE_KEY =
+      "sb_publishable_7H9yMbMXloTdt9TepGZhtQ_Tv3C55G0";
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
   </script>
 
 </body>
