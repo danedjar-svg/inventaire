@@ -10,20 +10,23 @@ function openModalProduits() {
 
   const editSelect = document.getElementById("m_edit_select");
   const deleteSelect = document.getElementById("m_delete_select");
+  const stockSelect = document.getElementById("m_stock_select");
   editSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
   deleteSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+  stockSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
 
   Object.entries(produitsParCode).forEach(([code, info]) => {
     const opt1 = document.createElement("option");
     opt1.value = code;
     opt1.textContent = info.nom + " (" + code + ")";
     editSelect.appendChild(opt1);
-    const opt2 = opt1.cloneNode(true);
-    deleteSelect.appendChild(opt2);
+    deleteSelect.appendChild(opt1.cloneNode(true));
+    stockSelect.appendChild(opt1.cloneNode(true));
   });
 
   document.getElementById("m_edit_fields").style.display = "none";
   document.getElementById("m_delete_info").style.display = "none";
+  document.getElementById("m_stock_fields").style.display = "none";
 }
 
 function closeModalProduits(event) {
@@ -32,12 +35,53 @@ function closeModalProduits(event) {
 }
 
 function switchModalTab(tab, btn) {
-  ["add", "edit", "delete"].forEach(t => {
+  ["add", "edit", "delete", "stock"].forEach(t => {
     document.getElementById("modal_tab_" + t).style.display = "none";
   });
   document.querySelectorAll(".modal-tab").forEach(b => b.classList.remove("active"));
   document.getElementById("modal_tab_" + tab).style.display = "block";
   btn.classList.add("active");
+}
+
+function modalFillStock() {
+  const code = document.getElementById("m_stock_select").value;
+  const info = produitsParCode[code];
+  const fields = document.getElementById("m_stock_fields");
+  if (!info) { fields.style.display = "none"; return; }
+  document.getElementById("m_affichage_stock").textContent = toNum(info.stockCell.textContent, 0);
+  document.getElementById("m_input_stock").value = "";
+  fields.style.display = "block";
+}
+
+async function modalStockPlus() {
+  const code = document.getElementById("m_stock_select").value;
+  const info = produitsParCode[code];
+  if (!info) return;
+  const nouveau = toNum(info.stockCell.textContent, 0) + 1;
+  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  await getData();
+  document.getElementById("m_affichage_stock").textContent = nouveau;
+  info.stockCell.textContent = nouveau;
+}
+
+async function modalStockMoins() {
+  const code = document.getElementById("m_stock_select").value;
+  const info = produitsParCode[code];
+  if (!info) return;
+  const nouveau = toNum(info.stockCell.textContent, 0) - 1;
+  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
+  await getData();
+  document.getElementById("m_affichage_stock").textContent = nouveau;
+}
+
+async function modalDefinirStock() {
+  const code = document.getElementById("m_stock_select").value;
+  const valeur = toNum(document.getElementById("m_input_stock").value);
+  if (!code) return;
+  await supabaseClient.from("produit").update({ stock: valeur }).eq("code_barre", code);
+  document.getElementById("m_input_stock").value = "";
+  await getData();
+  document.getElementById("m_affichage_stock").textContent = valeur;
 }
 
 function fillEditForm() {
