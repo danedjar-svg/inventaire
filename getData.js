@@ -519,6 +519,22 @@ document.addEventListener("input", function (event) {
   }
 });
 
+function setMode(mode) {
+  const radio = document.querySelector(`input[name="work_mode"][value="${mode}"]`);
+  if (radio) {
+    radio.checked = true;
+    updateModeDisplay();
+  }
+
+  document.querySelectorAll(".menu-item").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  const index = mode === "inventory" ? 0 : 1;
+  const menuItems = document.querySelectorAll(".menu-item");
+  if (menuItems[index]) menuItems[index].classList.add("active");
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
   document
     .querySelectorAll('input[name="work_mode"]')
@@ -527,6 +543,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
   updateModeDisplay();
+
+  const menuItems = document.querySelectorAll(".menu-item");
+  if (menuItems[0]) menuItems[0].addEventListener("click", () => setMode("inventory"));
+  if (menuItems[1]) menuItems[1].addEventListener("click", () => setMode("movement"));
 
   const { data } = await supabaseClient.auth.getSession();
 
