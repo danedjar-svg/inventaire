@@ -4,158 +4,17 @@ let produitsParCode = {};
 let selectedCode = "";
 let allProductsData = [];
 
-function openModalProduits() {
-  const modal = document.getElementById("modal_produits");
-  modal.style.display = "flex";
-
-  const editSelect = document.getElementById("m_edit_select");
-  const deleteSelect = document.getElementById("m_delete_select");
-  const stockSelect = document.getElementById("m_stock_select");
-  editSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-  deleteSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-  stockSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const opt1 = document.createElement("option");
-    opt1.value = code;
-    opt1.textContent = info.nom + " (" + code + ")";
-    editSelect.appendChild(opt1);
-    deleteSelect.appendChild(opt1.cloneNode(true));
-    stockSelect.appendChild(opt1.cloneNode(true));
-  });
-
-  document.getElementById("m_edit_fields").style.display = "none";
-  document.getElementById("m_delete_info").style.display = "none";
-  document.getElementById("m_stock_fields").style.display = "none";
-}
-
-function closeModalProduits(event) {
-  if (event && event.target !== document.getElementById("modal_produits")) return;
-  document.getElementById("modal_produits").style.display = "none";
-}
-
-function switchModalTab(tab, btn) {
-  ["add", "edit", "delete", "stock"].forEach(t => {
-    document.getElementById("modal_tab_" + t).style.display = "none";
-  });
-  document.querySelectorAll(".modal-tab").forEach(b => b.classList.remove("active"));
-  document.getElementById("modal_tab_" + tab).style.display = "block";
-  btn.classList.add("active");
-}
-
-function modalFillStock() {
-  const code = document.getElementById("m_stock_select").value;
-  const info = produitsParCode[code];
-  const fields = document.getElementById("m_stock_fields");
-  if (!info) { fields.style.display = "none"; return; }
-  document.getElementById("m_affichage_stock").textContent = toNum(info.stockCell.textContent, 0);
-  document.getElementById("m_input_stock").value = "";
-  fields.style.display = "block";
-}
-
-async function modalStockPlus() {
-  const code = document.getElementById("m_stock_select").value;
-  const info = produitsParCode[code];
-  if (!info) return;
-  const nouveau = toNum(info.stockCell.textContent, 0) + 1;
-  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
-  await getData();
-  document.getElementById("m_affichage_stock").textContent = nouveau;
-  info.stockCell.textContent = nouveau;
-}
-
-async function modalStockMoins() {
-  const code = document.getElementById("m_stock_select").value;
-  const info = produitsParCode[code];
-  if (!info) return;
-  const nouveau = toNum(info.stockCell.textContent, 0) - 1;
-  await supabaseClient.from("produit").update({ stock: nouveau }).eq("code_barre", code);
-  await getData();
-  document.getElementById("m_affichage_stock").textContent = nouveau;
-}
-
-async function modalDefinirStock() {
-  const code = document.getElementById("m_stock_select").value;
-  const valeur = toNum(document.getElementById("m_input_stock").value);
-  if (!code) return;
-  await supabaseClient.from("produit").update({ stock: valeur }).eq("code_barre", code);
-  document.getElementById("m_input_stock").value = "";
-  await getData();
-  document.getElementById("m_affichage_stock").textContent = valeur;
-}
-
-function fillEditForm() {
-  const code = document.getElementById("m_edit_select").value;
-  const info = produitsParCode[code];
-  const fields = document.getElementById("m_edit_fields");
-  if (!info) { fields.style.display = "none"; return; }
-  const item = allProductsData.find(p => normalizeCode(p.code_barre) === code);
-  if (!item) return;
-  document.getElementById("m_edit_nom").value = item.nom || "";
-  document.getElementById("m_edit_stock_min").value = item.stock_min ?? 1;
-  document.getElementById("m_edit_stock_max").value = item.stock_max ?? 7;
-  document.getElementById("m_edit_emplacement").value = item.emplacement || "";
-  fields.style.display = "block";
-}
-
-function fillDeleteInfo() {
-  const code = document.getElementById("m_delete_select").value;
-  const info = produitsParCode[code];
-  const deleteInfo = document.getElementById("m_delete_info");
-  if (!info) { deleteInfo.style.display = "none"; return; }
-  document.getElementById("m_delete_label").textContent = info.nom + " — " + code;
-  deleteInfo.style.display = "block";
-}
-
-async function modalAddProduct() {
-  const code = normalizeCode(document.getElementById("m_new_code").value);
-  const nom = document.getElementById("m_new_nom").value.trim();
-  const emplacement = document.getElementById("m_new_emplacement").value;
-  if (!code || !nom || !emplacement) { alert("Code barre, nom et emplacement obligatoires."); return; }
-  const { error } = await supabaseClient.from("produit").insert([{
-    code_barre: code, nom, stock: toNum(document.getElementById("m_new_stock").value),
-    stock_min: toNum(document.getElementById("m_new_stock_min").value),
-    stock_max: toNum(document.getElementById("m_new_stock_max").value), emplacement
-  }]);
-  if (error) { console.error(error); alert("Erreur ajout produit."); return; }
-  document.getElementById("m_new_code").value = "";
-  document.getElementById("m_new_nom").value = "";
-  document.getElementById("m_new_stock").value = "0";
-  document.getElementById("m_new_stock_min").value = "1";
-  document.getElementById("m_new_stock_max").value = "7";
-  document.getElementById("m_new_emplacement").value = "";
-  await getData();
-  document.getElementById("modal_produits").style.display = "none";
-}
-
-async function modalEditProduct() {
-  const code = document.getElementById("m_edit_select").value;
-  if (!code) return;
-  const { error } = await supabaseClient.from("produit").update({
-    nom: document.getElementById("m_edit_nom").value.trim(),
-    stock_min: toNum(document.getElementById("m_edit_stock_min").value),
-    stock_max: toNum(document.getElementById("m_edit_stock_max").value),
-    emplacement: document.getElementById("m_edit_emplacement").value
-  }).eq("code_barre", code);
-  if (error) { console.error(error); alert("Erreur modification."); return; }
-  await getData();
-  document.getElementById("modal_produits").style.display = "none";
-}
-
-async function modalDeleteProduct() {
-  const code = document.getElementById("m_delete_select").value;
-  if (!code) return;
-  if (!confirm("Supprimer ce produit définitivement ?")) return;
-  await supabaseClient.from("produit").delete().eq("code_barre", code);
-  await getData();
-  document.getElementById("modal_produits").style.display = "none";
-}
-
 let stockFilterMode = "all";
 let emplacementFilterMode = "all";
 
+/* ===================== OUTILS ===================== */
+
+function $(id) {
+  return document.getElementById(id);
+}
+
 function normalizeCode(code) {
-  return String(code)
+  return String(code || "")
     .trim()
     .toUpperCase()
     .replace(/R2N/g, "")
@@ -165,14 +24,12 @@ function normalizeCode(code) {
     .replace(/\./g, "");
 }
 
-function $(id) {
-  return document.getElementById(id);
-}
-
 function toNum(v, fallback = 0) {
   const n = parseFloat(String(v).replace(",", "."));
   return Number.isFinite(n) ? n : fallback;
 }
+
+/* ===================== MODE ===================== */
 
 function getCurrentMode() {
   const selected = document.querySelector('input[name="work_mode"]:checked');
@@ -187,6 +44,24 @@ function updateModeDisplay() {
       : "Mode actuel : Entrée / Sortie";
 }
 
+function setMode(mode) {
+  const radio = document.querySelector(`input[name="work_mode"][value="${mode}"]`);
+
+  if (radio) {
+    radio.checked = true;
+    updateModeDisplay();
+  }
+
+  document.querySelectorAll(".menu-item[data-mode]").forEach(item => {
+    item.classList.remove("active");
+    if (item.dataset.mode === mode) {
+      item.classList.add("active");
+    }
+  });
+}
+
+/* ===================== SELECTION ===================== */
+
 function clearSelectionHighlight() {
   Object.values(produitsParCode).forEach(p => {
     if (p.row) p.row.classList.remove("status-selected");
@@ -199,34 +74,12 @@ function setSelected(code) {
 
   const info = produitsParCode[selectedCode];
 
-  if (!selectedCode || !info) {
-    $("affichage_stock").textContent = "stock : 0";
-    return;
-  }
+  if (!selectedCode || !info) return;
 
   info.row.classList.add("status-selected");
-  $("affichage_stock").textContent =
-    "stock : " + toNum(info.stockCell.textContent, 0);
 }
 
-function updateRowStatus(tr) {
-  const tds = tr.querySelectorAll("td");
-  if (tds.length < 6) return;
-
-  const stock = toNum(tds[2].textContent, 0);
-  const stockMin = toNum(tds[3].textContent, 0);
-  const stockMax = toNum(tds[4].textContent, 0);
-
-  tr.classList.remove("status-good", "status-warning", "status-danger");
-
-  if (stock < 0 || stock < stockMin || stock > stockMax) {
-    tr.classList.add("status-danger");
-  } else if (stock === stockMin + 1 || stock === stockMax - 1) {
-    tr.classList.add("status-warning");
-  } else {
-    tr.classList.add("status-good");
-  }
-}
+/* ===================== LOGIN ===================== */
 
 async function login() {
   const email = $("login_email").value.trim();
@@ -244,11 +97,12 @@ async function login() {
   }
 
   localStorage.setItem(LOGIN_KEY, "1");
+
   $("login_section").style.display = "none";
   $("inventory_section").style.display = "block";
   $("login_error").style.display = "none";
 
-  getData();
+  await getData();
 }
 
 async function logout() {
@@ -259,45 +113,7 @@ async function logout() {
   $("inventory_section").style.display = "none";
 }
 
-function rebuildDropdown() {
-  const select = $("productSelect");
-  select.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
-
-  Object.entries(produitsParCode).forEach(([code, info]) => {
-    const option = document.createElement("option");
-    option.value = code;
-    option.textContent = info.nom;
-    select.appendChild(option);
-  });
-
-  select.onchange = function () {
-    setSelected(this.value);
-  };
-}
-
-function ajouterCelluleActions(tr, codeBarre) {
-  const td = document.createElement("td");
-
-  const btnPlus = document.createElement("button");
-  btnPlus.textContent = "+";
-  btnPlus.onclick = () => {
-    $("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    stock();
-  };
-
-  const btnMoins = document.createElement("button");
-  btnMoins.textContent = "-";
-  btnMoins.onclick = () => {
-    $("productSelect").value = codeBarre;
-    setSelected(codeBarre);
-    retrait();
-  };
-
-  td.appendChild(btnPlus);
-  td.appendChild(btnMoins);
-  tr.appendChild(td);
-}
+/* ===================== DONNEES SUPABASE ===================== */
 
 async function getData() {
   const { data, error } = await supabaseClient
@@ -332,7 +148,63 @@ function applyFilters() {
     );
   }
 
+  const searchInput = document.querySelector(".search-bar");
+  const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+  if (searchValue) {
+    filteredData = filteredData.filter(item => {
+      const code = normalizeCode(item.code_barre).toLowerCase();
+      const nom = String(item.nom || "").toLowerCase();
+      return code.includes(searchValue) || nom.includes(searchValue);
+    });
+  }
+
   renderTable(filteredData);
+}
+
+/* ===================== TABLEAU ===================== */
+
+function updateRowStatus(tr) {
+  const tds = tr.querySelectorAll("td");
+  if (tds.length < 6) return;
+
+  const stock = toNum(tds[2].textContent, 0);
+  const stockMin = toNum(tds[3].textContent, 0);
+  const stockMax = toNum(tds[4].textContent, 0);
+
+  tr.classList.remove("status-good", "status-warning", "status-danger");
+
+  if (stock < 0 || stock < stockMin || stock > stockMax) {
+    tr.classList.add("status-danger");
+  } else if (stock === stockMin + 1 || stock === stockMax - 1) {
+    tr.classList.add("status-warning");
+  } else {
+    tr.classList.add("status-good");
+  }
+}
+
+function ajouterCelluleActions(tr, codeBarre) {
+  const td = document.createElement("td");
+
+  const btnPlus = document.createElement("button");
+  btnPlus.textContent = "+";
+  btnPlus.onclick = async event => {
+    event.stopPropagation();
+    setSelected(codeBarre);
+    await stock(codeBarre);
+  };
+
+  const btnMoins = document.createElement("button");
+  btnMoins.textContent = "-";
+  btnMoins.onclick = async event => {
+    event.stopPropagation();
+    setSelected(codeBarre);
+    await retrait(codeBarre);
+  };
+
+  td.appendChild(btnPlus);
+  td.appendChild(btnMoins);
+  tr.appendChild(td);
 }
 
 function renderTable(data) {
@@ -433,7 +305,9 @@ function renderTable(data) {
     `;
     emplacementSelect.value = item.emplacement || "";
 
-    emplacementSelect.onchange = async function () {
+    emplacementSelect.onchange = async function (event) {
+      event.stopPropagation();
+
       const { error } = await supabaseClient
         .from("produit")
         .update({ emplacement: this.value })
@@ -445,7 +319,7 @@ function renderTable(data) {
         return;
       }
 
-      getData();
+      await getData();
     };
 
     tdEmplacement.appendChild(emplacementSelect);
@@ -459,7 +333,6 @@ function renderTable(data) {
         event.target.tagName === "SELECT"
       ) return;
 
-      $("productSelect").value = code;
       setSelected(code);
     };
 
@@ -476,102 +349,215 @@ function renderTable(data) {
 
   table.appendChild(tbody);
   $("product").appendChild(table);
-
-  rebuildDropdown();
 }
 
-async function stock() {
-  const code = normalizeCode($("productSelect").value);
+/* ===================== STOCK ===================== */
+
+async function updateStock(code, nouveauStock) {
+  const { error } = await supabaseClient
+    .from("produit")
+    .update({ stock: nouveauStock })
+    .eq("code_barre", code);
+
+  if (error) {
+    console.error(error);
+    alert("Erreur mise à jour du stock.");
+    return false;
+  }
+
+  await getData();
+  return true;
+}
+
+async function stock(code = selectedCode) {
+  code = normalizeCode(code);
   const info = produitsParCode[code];
 
   if (!info) return;
 
   const nouveau = toNum(info.stockCell.textContent, 0) + 1;
-
-  await supabaseClient
-    .from("produit")
-    .update({ stock: nouveau })
-    .eq("code_barre", code);
-
-  getData();
+  await updateStock(code, nouveau);
 }
 
-async function retrait() {
-  const code = normalizeCode($("productSelect").value);
+async function retrait(code = selectedCode) {
+  code = normalizeCode(code);
   const info = produitsParCode[code];
 
   if (!info) return;
 
   const nouveau = toNum(info.stockCell.textContent, 0) - 1;
-
-  await supabaseClient
-    .from("produit")
-    .update({ stock: nouveau })
-    .eq("code_barre", code);
-
-  getData();
+  await updateStock(code, nouveau);
 }
 
-async function definirStock() {
-  const code = normalizeCode($("productSelect").value);
-  const valeur = toNum($("input_stock").value);
+async function definirStock(code = selectedCode, valeur = null) {
+  code = normalizeCode(code);
 
-  await supabaseClient
-    .from("produit")
-    .update({ stock: valeur })
-    .eq("code_barre", code);
+  if (!code) return;
 
-  $("input_stock").value = "";
-  getData();
-}
-
-async function inventoryUpdate(code) {
-  const produit = produitsParCode[code];
-
-  if (!produit) return;
-
-  const valeur = prompt(
-    "Inventaire : " + produit.nom +
-    "\n\nQuantité réelle trouvée :"
-  );
-
-  if (valeur === null) return;
-
-  const quantite = toNum(valeur, NaN);
+  const quantite = valeur !== null ? toNum(valeur, NaN) : NaN;
 
   if (!Number.isFinite(quantite)) {
-    alert("Valeur invalide");
+    alert("Valeur invalide.");
     return;
   }
 
-  await supabaseClient
-    .from("produit")
-    .update({ stock: quantite })
-    .eq("code_barre", code);
-
-  getData();
+  await updateStock(code, quantite);
 }
 
-async function addProduct() {
-  const code = normalizeCode($("new_code").value);
-  const nom = $("new_nom").value.trim();
-  const emplacement = $("new_emplacement").value;
+/* ===================== SCANNER ===================== */
+
+async function handleBarcodeScan(event) {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+
+  const input = $("barcode_input");
+  const result = $("barcode_result");
+
+  const code = normalizeCode(input.value);
+  input.value = code;
+
+  if (!code) return;
+
+  const produit = produitsParCode[code];
+
+  if (!produit) {
+    result.textContent = "Produit non trouvé : " + code;
+    alert("Produit non trouvé : " + code);
+    input.value = "";
+    input.focus();
+    return;
+  }
+
+  setSelected(code);
+
+  if (getCurrentMode() === "inventory") {
+    const valeur = prompt(
+      "Inventaire\n\nProduit : " + produit.nom +
+      "\nStock actuel : " + toNum(produit.stockCell.textContent, 0) +
+      "\n\nQuantité réelle trouvée :"
+    );
+
+    if (valeur === null) {
+      input.value = "";
+      input.focus();
+      return;
+    }
+
+    const quantite = toNum(valeur, NaN);
+
+    if (!Number.isFinite(quantite)) {
+      alert("Valeur invalide.");
+      input.value = "";
+      input.focus();
+      return;
+    }
+
+    const ok = await updateStock(code, quantite);
+
+    if (ok) {
+      result.textContent = "Inventaire effectué : " + produit.nom;
+    }
+
+    input.value = "";
+    input.focus();
+    return;
+  }
+
+  const choix = prompt(
+    "Entrée / Sortie\n\nProduit : " + produit.nom +
+    "\nStock actuel : " + toNum(produit.stockCell.textContent, 0) +
+    "\n\n1 = Entrée +1" +
+    "\n2 = Sortie -1"
+  );
+
+  if (choix === "1") {
+    const nouveau = toNum(produit.stockCell.textContent, 0) + 1;
+    const ok = await updateStock(code, nouveau);
+
+    if (ok) {
+      result.textContent = "Entrée +1 : " + produit.nom;
+    }
+  } else if (choix === "2") {
+    const nouveau = toNum(produit.stockCell.textContent, 0) - 1;
+    const ok = await updateStock(code, nouveau);
+
+    if (ok) {
+      result.textContent = "Sortie -1 : " + produit.nom;
+    }
+  } else {
+    result.textContent = "Action annulée : " + produit.nom;
+  }
+
+  input.value = "";
+  input.focus();
+}
+
+/* ===================== MODAL PRODUITS ===================== */
+
+function openModalProduits() {
+  const modal = $("modal_produits");
+  modal.style.display = "flex";
+
+  const editSelect = $("m_edit_select");
+  const deleteSelect = $("m_delete_select");
+  const stockSelect = $("m_stock_select");
+
+  editSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+  deleteSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+  stockSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+
+  Object.entries(produitsParCode).forEach(([code, info]) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = info.nom + " (" + code + ")";
+
+    editSelect.appendChild(opt);
+    deleteSelect.appendChild(opt.cloneNode(true));
+    stockSelect.appendChild(opt.cloneNode(true));
+  });
+
+  $("m_edit_fields").style.display = "none";
+  $("m_delete_info").style.display = "none";
+  $("m_stock_fields").style.display = "none";
+}
+
+function closeModalProduits(event) {
+  if (event && event.target !== $("modal_produits")) return;
+  $("modal_produits").style.display = "none";
+}
+
+function switchModalTab(tab, btn) {
+  ["add", "edit", "delete", "stock"].forEach(t => {
+    $("modal_tab_" + t).style.display = "none";
+  });
+
+  document.querySelectorAll(".modal-tab").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  $("modal_tab_" + tab).style.display = "block";
+  btn.classList.add("active");
+}
+
+async function modalAddProduct() {
+  const code = normalizeCode($("m_new_code").value);
+  const nom = $("m_new_nom").value.trim();
+  const emplacement = $("m_new_emplacement").value;
 
   if (!code || !nom || !emplacement) {
     alert("Code barre, nom et emplacement obligatoires.");
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("produit")
-    .insert([{
-      code_barre: code,
-      nom: nom,
-      stock: toNum($("new_stock").value),
-      stock_min: toNum($("new_stock_min").value),
-      stock_max: toNum($("new_stock_max").value),
-      emplacement: emplacement
-    }]);
+  const { error } = await supabaseClient.from("produit").insert([{
+    code_barre: code,
+    nom: nom,
+    stock: toNum($("m_new_stock").value),
+    stock_min: toNum($("m_new_stock_min").value),
+    stock_max: toNum($("m_new_stock_max").value),
+    emplacement: emplacement
+  }]);
 
   if (error) {
     console.error(error);
@@ -579,85 +565,162 @@ async function addProduct() {
     return;
   }
 
-  $("new_code").value = "";
-  $("new_nom").value = "";
-  $("new_stock").value = "0";
-  $("new_stock_min").value = "1";
-  $("new_stock_max").value = "7";
-  $("new_emplacement").value = "";
+  $("m_new_code").value = "";
+  $("m_new_nom").value = "";
+  $("m_new_stock").value = "0";
+  $("m_new_stock_min").value = "1";
+  $("m_new_stock_max").value = "7";
+  $("m_new_emplacement").value = "";
 
-  getData();
+  await getData();
+  $("modal_produits").style.display = "none";
 }
 
-async function deleteProduct() {
-  const code = normalizeCode($("delete_code").value);
+function fillEditForm() {
+  const code = $("m_edit_select").value;
+  const fields = $("m_edit_fields");
 
-  await supabaseClient
+  const item = allProductsData.find(p => normalizeCode(p.code_barre) === code);
+
+  if (!item) {
+    fields.style.display = "none";
+    return;
+  }
+
+  $("m_edit_nom").value = item.nom || "";
+  $("m_edit_stock_min").value = item.stock_min ?? 1;
+  $("m_edit_stock_max").value = item.stock_max ?? 7;
+  $("m_edit_emplacement").value = item.emplacement || "";
+
+  fields.style.display = "block";
+}
+
+async function modalEditProduct() {
+  const code = $("m_edit_select").value;
+
+  if (!code) return;
+
+  const { error } = await supabaseClient.from("produit").update({
+    nom: $("m_edit_nom").value.trim(),
+    stock_min: toNum($("m_edit_stock_min").value),
+    stock_max: toNum($("m_edit_stock_max").value),
+    emplacement: $("m_edit_emplacement").value
+  }).eq("code_barre", code);
+
+  if (error) {
+    console.error(error);
+    alert("Erreur modification.");
+    return;
+  }
+
+  await getData();
+  $("modal_produits").style.display = "none";
+}
+
+function fillDeleteInfo() {
+  const code = $("m_delete_select").value;
+  const info = produitsParCode[code];
+  const deleteInfo = $("m_delete_info");
+
+  if (!info) {
+    deleteInfo.style.display = "none";
+    return;
+  }
+
+  $("m_delete_label").textContent = info.nom + " — " + code;
+  deleteInfo.style.display = "block";
+}
+
+async function modalDeleteProduct() {
+  const code = $("m_delete_select").value;
+
+  if (!code) return;
+
+  if (!confirm("Supprimer ce produit définitivement ?")) return;
+
+  const { error } = await supabaseClient
     .from("produit")
     .delete()
     .eq("code_barre", code);
 
-  $("delete_code").value = "";
-  getData();
-}
-
-async function handleBarcodeScan(event) {
-  if (event.key !== "Enter") return;
-
-  event.preventDefault();
-
-  let code = normalizeCode($("barcode_input").value);
-  $("barcode_input").value = code;
-
-  const produit = produitsParCode[code];
-
-  if (!produit) {
-    $("barcode_result").textContent =
-      "Produit non trouvé : " + code;
-
-    $("new_code").value = code;
-    $("delete_code").value = code;
-
+  if (error) {
+    console.error(error);
+    alert("Erreur suppression.");
     return;
   }
 
-  $("productSelect").value = code;
-  setSelected(code);
+  await getData();
+  $("modal_produits").style.display = "none";
+}
 
-  if (getCurrentMode() === "inventory") {
-    await inventoryUpdate(code);
+function modalFillStock() {
+  const code = $("m_stock_select").value;
+  const info = produitsParCode[code];
+  const fields = $("m_stock_fields");
 
-    $("barcode_result").textContent =
-      "Inventaire effectué : " + produit.nom;
-
-    $("barcode_input").value = "";
+  if (!info) {
+    fields.style.display = "none";
     return;
   }
 
-  const choix = prompt(
-    "Produit : " + produit.nom +
-    "\n\n1 = Ajouter +1" +
-    "\n2 = Retirer -1"
-  );
+  $("m_affichage_stock").textContent = toNum(info.stockCell.textContent, 0);
+  $("m_input_stock").value = "";
+  fields.style.display = "block";
+}
 
-  if (choix === "1") {
-    await stock();
-    $("barcode_result").textContent =
-      "Ajout +1 : " + produit.nom;
-  } else if (choix === "2") {
-    await retrait();
-    $("barcode_result").textContent =
-      "Retrait -1 : " + produit.nom;
+async function modalStockPlus() {
+  const code = $("m_stock_select").value;
+  const info = produitsParCode[code];
+
+  if (!info) return;
+
+  const nouveau = toNum(info.stockCell.textContent, 0) + 1;
+  const ok = await updateStock(code, nouveau);
+
+  if (ok) {
+    $("m_affichage_stock").textContent = nouveau;
+  }
+}
+
+async function modalStockMoins() {
+  const code = $("m_stock_select").value;
+  const info = produitsParCode[code];
+
+  if (!info) return;
+
+  const nouveau = toNum(info.stockCell.textContent, 0) - 1;
+  const ok = await updateStock(code, nouveau);
+
+  if (ok) {
+    $("m_affichage_stock").textContent = nouveau;
+  }
+}
+
+async function modalDefinirStock() {
+  const code = $("m_stock_select").value;
+  const valeur = toNum($("m_input_stock").value, NaN);
+
+  if (!code) return;
+
+  if (!Number.isFinite(valeur)) {
+    alert("Valeur invalide.");
+    return;
   }
 
-  $("barcode_input").value = "";
+  const ok = await updateStock(code, valeur);
+
+  if (ok) {
+    $("m_input_stock").value = "";
+    $("m_affichage_stock").textContent = valeur;
+  }
 }
+
+/* ===================== EVENTS ===================== */
 
 document.addEventListener("input", function (event) {
   if (
     event.target.id === "barcode_input" ||
-    event.target.id === "new_code" ||
-    event.target.id === "delete_code"
+    event.target.id === "m_new_code"
   ) {
     const cleaned = normalizeCode(event.target.value);
 
@@ -665,20 +728,11 @@ document.addEventListener("input", function (event) {
       event.target.value = cleaned;
     }
   }
-});
 
-function setMode(mode) {
-  const radio = document.querySelector(`input[name="work_mode"][value="${mode}"]`);
-  if (radio) {
-    radio.checked = true;
-    updateModeDisplay();
+  if (event.target.classList.contains("search-bar")) {
+    applyFilters();
   }
-
-  document.querySelectorAll(".menu-item[data-mode]").forEach(item => {
-    item.classList.remove("active");
-    if (item.dataset.mode === mode) item.classList.add("active");
-  });
-}
+});
 
 document.addEventListener("DOMContentLoaded", async function () {
   document
@@ -701,7 +755,12 @@ document.addEventListener("DOMContentLoaded", async function () {
   ) {
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
-    getData();
+    await getData();
+  }
+
+  const barcodeInput = $("barcode_input");
+  if (barcodeInput) {
+    barcodeInput.focus();
   }
 
   supabaseClient
@@ -713,8 +772,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         schema: "public",
         table: "produit"
       },
-      () => {
-        getData();
+      async () => {
+        await getData();
       }
     )
     .subscribe();
