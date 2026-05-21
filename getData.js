@@ -777,4 +777,25 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     )
     .subscribe();
-});
+})
+
+window.openModalProduits = function () {
+  const modal = document.getElementById("modal_produits");
+
+  if (!modal) {
+    alert("Erreur : fenêtre Produits introuvable.");
+    return;
+  }
+
+  modal.style.display = "flex";
+};
+
+window.closeModalProduits = function (event) {
+  const modal = document.getElementById("modal_produits");
+
+  if (!modal) return;
+
+  if (event && event.target !== modal) return;
+
+  modal.style.display = "none";
+};
