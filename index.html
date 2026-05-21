@@ -177,29 +177,6 @@
               <div class="scan-result" id="barcode_result">Aucun scan récent</div>
             </div>
 
-            <!-- STOCK CONTROL -->
-            <div class="side-card">
-              <h3>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                Ajuster le stock
-              </h3>
-              <div class="stock-control">
-                <select id="productSelect">
-                  <option value="">-- Sélectionnez un produit --</option>
-                </select>
-                <div class="current-stock-display">
-                  <span class="current-stock-label">Stock actuel</span>
-                  <span id="affichage_stock" class="current-stock-value">0</span>
-                </div>
-                <input type="text" id="input_stock" placeholder="Quantité : ex. 5, -3, 10">
-                <div class="quick-grid">
-                  <button class="quick-plus" onclick="stock()">+ 1</button>
-                  <button class="quick-minus" onclick="retrait()">− 1</button>
-                </div>
-                <button class="validate-btn" onclick="definirStock()">Valider</button>
-              </div>
-            </div>
-
           </div>
         </section>
       </main>
