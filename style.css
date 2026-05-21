@@ -498,8 +498,16 @@ body {
 #product table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 700px;
+  min-width: 500px;
 }
+
+#product thead th:nth-child(1) { width: 110px; } /* Code barre */
+#product thead th:nth-child(2) { width: auto; }   /* Nom */
+#product thead th:nth-child(3) { width: 100px; }  /* Stock */
+#product thead th:nth-child(4) { width: 55px; }   /* Min */
+#product thead th:nth-child(5) { width: 55px; }   /* Max */
+#product thead th:nth-child(6) { width: 150px; }  /* Emplacement */
+#product thead th:nth-child(7) { width: 70px; }   /* Actions */
 
 #product thead th {
   background: var(--blue-dark);
