@@ -200,42 +200,6 @@
               </div>
             </div>
 
-            <!-- ADD PRODUCT -->
-            <div class="side-card">
-              <h3>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                Ajouter un produit
-              </h3>
-              <div class="add-form">
-                <input type="text" id="new_code" placeholder="Code barre">
-                <input type="text" id="new_nom" placeholder="Nom du produit">
-                <div class="add-form-grid">
-                  <input type="number" id="new_stock" placeholder="Stock" value="0">
-                  <input type="number" id="new_stock_min" placeholder="Min" value="1">
-                  <input type="number" id="new_stock_max" placeholder="Max" value="7">
-                </div>
-                <select id="new_emplacement">
-                  <option value="">-- Emplacement --</option>
-                  <option value="Bungalow">Bungalow</option>
-                  <option value="Container Retrofit">Container Retrofit</option>
-                  <option value="Container SAV">Container SAV</option>
-                </select>
-                <button class="add-btn" onclick="addProduct()">Ajouter le produit</button>
-              </div>
-            </div>
-
-            <!-- DELETE PRODUCT -->
-            <div class="side-card side-card-danger">
-              <h3>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                Supprimer un produit
-              </h3>
-              <div class="add-form">
-                <input type="text" id="delete_code" placeholder="Code barre à supprimer">
-                <button class="delete-btn" onclick="deleteProduct()">Supprimer</button>
-              </div>
-            </div>
-
           </div>
         </section>
       </main>
