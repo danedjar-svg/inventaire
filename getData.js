@@ -3,6 +3,110 @@ const LOGIN_KEY = "inventaire_logged_in";
 let produitsParCode = {};
 let selectedCode = "";
 let allProductsData = [];
+
+function openModalProduits() {
+  const modal = document.getElementById("modal_produits");
+  modal.style.display = "flex";
+
+  const editSelect = document.getElementById("m_edit_select");
+  const deleteSelect = document.getElementById("m_delete_select");
+  editSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+  deleteSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
+
+  Object.entries(produitsParCode).forEach(([code, info]) => {
+    const opt1 = document.createElement("option");
+    opt1.value = code;
+    opt1.textContent = info.nom + " (" + code + ")";
+    editSelect.appendChild(opt1);
+    const opt2 = opt1.cloneNode(true);
+    deleteSelect.appendChild(opt2);
+  });
+
+  document.getElementById("m_edit_fields").style.display = "none";
+  document.getElementById("m_delete_info").style.display = "none";
+}
+
+function closeModalProduits(event) {
+  if (event && event.target !== document.getElementById("modal_produits")) return;
+  document.getElementById("modal_produits").style.display = "none";
+}
+
+function switchModalTab(tab, btn) {
+  ["add", "edit", "delete"].forEach(t => {
+    document.getElementById("modal_tab_" + t).style.display = "none";
+  });
+  document.querySelectorAll(".modal-tab").forEach(b => b.classList.remove("active"));
+  document.getElementById("modal_tab_" + tab).style.display = "block";
+  btn.classList.add("active");
+}
+
+function fillEditForm() {
+  const code = document.getElementById("m_edit_select").value;
+  const info = produitsParCode[code];
+  const fields = document.getElementById("m_edit_fields");
+  if (!info) { fields.style.display = "none"; return; }
+  const item = allProductsData.find(p => normalizeCode(p.code_barre) === code);
+  if (!item) return;
+  document.getElementById("m_edit_nom").value = item.nom || "";
+  document.getElementById("m_edit_stock_min").value = item.stock_min ?? 1;
+  document.getElementById("m_edit_stock_max").value = item.stock_max ?? 7;
+  document.getElementById("m_edit_emplacement").value = item.emplacement || "";
+  fields.style.display = "block";
+}
+
+function fillDeleteInfo() {
+  const code = document.getElementById("m_delete_select").value;
+  const info = produitsParCode[code];
+  const deleteInfo = document.getElementById("m_delete_info");
+  if (!info) { deleteInfo.style.display = "none"; return; }
+  document.getElementById("m_delete_label").textContent = info.nom + " — " + code;
+  deleteInfo.style.display = "block";
+}
+
+async function modalAddProduct() {
+  const code = normalizeCode(document.getElementById("m_new_code").value);
+  const nom = document.getElementById("m_new_nom").value.trim();
+  const emplacement = document.getElementById("m_new_emplacement").value;
+  if (!code || !nom || !emplacement) { alert("Code barre, nom et emplacement obligatoires."); return; }
+  const { error } = await supabaseClient.from("produit").insert([{
+    code_barre: code, nom, stock: toNum(document.getElementById("m_new_stock").value),
+    stock_min: toNum(document.getElementById("m_new_stock_min").value),
+    stock_max: toNum(document.getElementById("m_new_stock_max").value), emplacement
+  }]);
+  if (error) { console.error(error); alert("Erreur ajout produit."); return; }
+  document.getElementById("m_new_code").value = "";
+  document.getElementById("m_new_nom").value = "";
+  document.getElementById("m_new_stock").value = "0";
+  document.getElementById("m_new_stock_min").value = "1";
+  document.getElementById("m_new_stock_max").value = "7";
+  document.getElementById("m_new_emplacement").value = "";
+  await getData();
+  document.getElementById("modal_produits").style.display = "none";
+}
+
+async function modalEditProduct() {
+  const code = document.getElementById("m_edit_select").value;
+  if (!code) return;
+  const { error } = await supabaseClient.from("produit").update({
+    nom: document.getElementById("m_edit_nom").value.trim(),
+    stock_min: toNum(document.getElementById("m_edit_stock_min").value),
+    stock_max: toNum(document.getElementById("m_edit_stock_max").value),
+    emplacement: document.getElementById("m_edit_emplacement").value
+  }).eq("code_barre", code);
+  if (error) { console.error(error); alert("Erreur modification."); return; }
+  await getData();
+  document.getElementById("modal_produits").style.display = "none";
+}
+
+async function modalDeleteProduct() {
+  const code = document.getElementById("m_delete_select").value;
+  if (!code) return;
+  if (!confirm("Supprimer ce produit définitivement ?")) return;
+  await supabaseClient.from("produit").delete().eq("code_barre", code);
+  await getData();
+  document.getElementById("modal_produits").style.display = "none";
+}
+
 let stockFilterMode = "all";
 let emplacementFilterMode = "all";
 
@@ -519,22 +623,6 @@ document.addEventListener("input", function (event) {
   }
 });
 
-function setMode(mode) {
-  const radio = document.querySelector(`input[name="work_mode"][value="${mode}"]`);
-  if (radio) {
-    radio.checked = true;
-    updateModeDisplay();
-  }
-
-  document.querySelectorAll(".menu-item").forEach(item => {
-    item.classList.remove("active");
-  });
-
-  const index = mode === "inventory" ? 0 : 1;
-  const menuItems = document.querySelectorAll(".menu-item");
-  if (menuItems[index]) menuItems[index].classList.add("active");
-}
-
 document.addEventListener("DOMContentLoaded", async function () {
   document
     .querySelectorAll('input[name="work_mode"]')
@@ -543,10 +631,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
   updateModeDisplay();
-
-  const menuItems = document.querySelectorAll(".menu-item");
-  if (menuItems[0]) menuItems[0].addEventListener("click", () => setMode("inventory"));
-  if (menuItems[1]) menuItems[1].addEventListener("click", () => setMode("movement"));
 
   const { data } = await supabaseClient.auth.getSession();
 

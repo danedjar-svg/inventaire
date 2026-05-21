@@ -57,7 +57,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
             Entrée / Sortie
           </div>
-          <div class="menu-item">
+          <div class="menu-item" onclick="openModalProduits()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             Produits
           </div>
@@ -239,6 +239,123 @@
           </div>
         </section>
       </main>
+    </div>
+  </div>
+
+  <!-- MODAL PRODUITS -->
+  <div id="modal_produits" style="display:none;" class="modal-overlay" onclick="closeModalProduits(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Gestion des produits
+        </h2>
+        <button class="modal-close" onclick="closeModalProduits()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('add', this)">Ajouter</button>
+        <button class="modal-tab" onclick="switchModalTab('edit', this)">Modifier</button>
+        <button class="modal-tab" onclick="switchModalTab('delete', this)">Supprimer</button>
+      </div>
+
+      <!-- TAB AJOUTER -->
+      <div id="modal_tab_add" class="modal-tab-content">
+        <div class="modal-form">
+          <div class="modal-field">
+            <label>Code barre</label>
+            <input type="text" id="m_new_code" placeholder="Ex: 520059001">
+          </div>
+          <div class="modal-field">
+            <label>Nom du produit</label>
+            <input type="text" id="m_new_nom" placeholder="Ex: Capteur infrarouge">
+          </div>
+          <div class="modal-field-row">
+            <div class="modal-field">
+              <label>Stock initial</label>
+              <input type="number" id="m_new_stock" value="0">
+            </div>
+            <div class="modal-field">
+              <label>Stock min</label>
+              <input type="number" id="m_new_stock_min" value="1">
+            </div>
+            <div class="modal-field">
+              <label>Stock max</label>
+              <input type="number" id="m_new_stock_max" value="7">
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Emplacement</label>
+            <select id="m_new_emplacement">
+              <option value="">-- Choisir --</option>
+              <option value="Bungalow">Bungalow</option>
+              <option value="Container Retrofit">Container Retrofit</option>
+              <option value="Container SAV">Container SAV</option>
+            </select>
+          </div>
+          <button class="modal-btn-green" onclick="modalAddProduct()">Ajouter le produit</button>
+        </div>
+      </div>
+
+      <!-- TAB MODIFIER -->
+      <div id="modal_tab_edit" class="modal-tab-content" style="display:none;">
+        <div class="modal-form">
+          <div class="modal-field">
+            <label>Rechercher le produit</label>
+            <select id="m_edit_select" onchange="fillEditForm()">
+              <option value="">-- Sélectionnez un produit --</option>
+            </select>
+          </div>
+          <div id="m_edit_fields" style="display:none;">
+            <div class="modal-field">
+              <label>Nom du produit</label>
+              <input type="text" id="m_edit_nom" placeholder="Nom">
+            </div>
+            <div class="modal-field-row">
+              <div class="modal-field">
+                <label>Stock min</label>
+                <input type="number" id="m_edit_stock_min">
+              </div>
+              <div class="modal-field">
+                <label>Stock max</label>
+                <input type="number" id="m_edit_stock_max">
+              </div>
+            </div>
+            <div class="modal-field">
+              <label>Emplacement</label>
+              <select id="m_edit_emplacement">
+                <option value="">-- Choisir --</option>
+                <option value="Bungalow">Bungalow</option>
+                <option value="Container Retrofit">Container Retrofit</option>
+                <option value="Container SAV">Container SAV</option>
+              </select>
+            </div>
+            <button class="modal-btn-blue" onclick="modalEditProduct()">Enregistrer les modifications</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB SUPPRIMER -->
+      <div id="modal_tab_delete" class="modal-tab-content" style="display:none;">
+        <div class="modal-form">
+          <div class="modal-field">
+            <label>Sélectionner le produit à supprimer</label>
+            <select id="m_delete_select" onchange="fillDeleteInfo()">
+              <option value="">-- Sélectionnez un produit --</option>
+            </select>
+          </div>
+          <div id="m_delete_info" style="display:none;">
+            <div class="modal-delete-preview">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span id="m_delete_label">—</span>
+            </div>
+            <button class="modal-btn-red" onclick="modalDeleteProduct()">Confirmer la suppression</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
