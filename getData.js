@@ -780,7 +780,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   document
     .querySelectorAll('input[name="work_mode"]')
     .forEach(radio => {
-      radio.addEventListener("change", updateModeDisplay);
+      radio.addEventListener("change", function() {
+        updateModeDisplay();
+        setMode(this.value);
+      });
     });
 
   updateModeDisplay();
