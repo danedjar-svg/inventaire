@@ -131,6 +131,29 @@ async function getData() {
   applyFilters();
 }
 
+
+/* ===================== DASHBOARD ===================== */
+
+function updateDashboard() {
+  const data = allProductsData;
+
+  const nbProduits   = data.length;
+  const stockTotal   = data.reduce((s, p) => s + toNum(p.stock, 0), 0);
+  const critiques    = data.filter(p => toNum(p.stock, 0) < toNum(p.stock_min, 0)).length;
+  const bungalow     = data.filter(p => p.emplacement === "Bungalow").reduce((s, p) => s + toNum(p.stock, 0), 0);
+  const retrofit     = data.filter(p => p.emplacement === "Container Retrofit").reduce((s, p) => s + toNum(p.stock, 0), 0);
+  const sav          = data.filter(p => p.emplacement === "Container SAV").reduce((s, p) => s + toNum(p.stock, 0), 0);
+
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+
+  set("kpi_produits",    nbProduits);
+  set("kpi_stock_total", stockTotal);
+  set("kpi_critiques",   critiques);
+  set("kpi_bungalow",    bungalow);
+  set("kpi_retrofit",    retrofit);
+  set("kpi_sav",         sav);
+}
+
 function applyFilters() {
   let filteredData = [...allProductsData];
 
@@ -159,6 +182,7 @@ function applyFilters() {
     });
   }
 
+  updateDashboard();
   renderTable(filteredData);
 }
 
@@ -757,6 +781,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   document.querySelectorAll(".menu-item[data-mode]").forEach(item => {
     item.addEventListener("click", () => setMode(item.dataset.mode));
   });
+
+  const btnProduits = document.querySelector(".menu-item[data-action='produits']");
+  if (btnProduits) {
+    btnProduits.addEventListener("click", () => openModalProduits());
+  }
 
   const { data } = await supabaseClient.auth.getSession();
 
