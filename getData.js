@@ -137,12 +137,19 @@ async function getData() {
 function updateDashboard() {
   const data = allProductsData;
 
-  const nbProduits   = data.length;
-  const stockTotal   = data.reduce((s, p) => s + toNum(p.stock, 0), 0);
-  const critiques    = data.filter(p => toNum(p.stock, 0) < toNum(p.stock_min, 0)).length;
-  const bungalow     = data.filter(p => p.emplacement === "Bungalow").reduce((s, p) => s + toNum(p.stock, 0), 0);
-  const retrofit     = data.filter(p => p.emplacement === "Container Retrofit").reduce((s, p) => s + toNum(p.stock, 0), 0);
-  const sav          = data.filter(p => p.emplacement === "Container SAV").reduce((s, p) => s + toNum(p.stock, 0), 0);
+  // Nombre de types de produits
+  const nbProduits = data.length;
+
+  // Somme exacte de tous les stocks
+  const stockTotal = data.reduce((s, p) => s + toNum(p.stock, 0), 0);
+
+  // Critiques = stock <= 0
+  const critiques = data.filter(p => toNum(p.stock, 0) <= 0).length;
+
+  // Par emplacement = nombre de produits avec cet emplacement (exclut "" et "-- Choisir --")
+  const bungalow = data.filter(p => p.emplacement === "Bungalow").length;
+  const retrofit = data.filter(p => p.emplacement === "Container Retrofit").length;
+  const sav      = data.filter(p => p.emplacement === "Container SAV").length;
 
   const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
 
