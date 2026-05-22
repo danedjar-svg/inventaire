@@ -497,21 +497,32 @@ async function handleBarcodeScan(event) {
 
 function openModalProduits() {
   const modal = $("modal_produits");
+  if (!modal) { console.error("modal_produits introuvable"); return; }
+
   modal.style.display = "flex";
+
+  // Remettre sur l'onglet Ajouter par défaut
+  const firstTab = modal.querySelector(".modal-tab");
+  if (firstTab) switchModalTab("add", firstTab);
 
   const editSelect = $("m_edit_select");
   const deleteSelect = $("m_delete_select");
   const stockSelect = $("m_stock_select");
+  if (!editSelect || !deleteSelect || !stockSelect) return;
 
   editSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
   deleteSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
   stockSelect.innerHTML = '<option value="">-- Sélectionnez un produit --</option>';
 
-  Object.entries(produitsParCode).forEach(([code, info]) => {
+  // Peupler depuis allProductsData (toujours disponible) ou produitsParCode
+  const source = allProductsData.length > 0
+    ? allProductsData.map(p => ({ code: normalizeCode(p.code_barre), nom: p.nom || "" }))
+    : Object.entries(produitsParCode).map(([code, info]) => ({ code, nom: info.nom }));
+
+  source.forEach(({ code, nom }) => {
     const opt = document.createElement("option");
     opt.value = code;
-    opt.textContent = info.nom + " (" + code + ")";
-
+    opt.textContent = nom + " (" + code + ")";
     editSelect.appendChild(opt);
     deleteSelect.appendChild(opt.cloneNode(true));
     stockSelect.appendChild(opt.cloneNode(true));
@@ -778,24 +789,3 @@ document.addEventListener("DOMContentLoaded", async function () {
     )
     .subscribe();
 })
-
-window.openModalProduits = function () {
-  const modal = document.getElementById("modal_produits");
-
-  if (!modal) {
-    alert("Erreur : fenêtre Produits introuvable.");
-    return;
-  }
-
-  modal.style.display = "flex";
-};
-
-window.closeModalProduits = function (event) {
-  const modal = document.getElementById("modal_produits");
-
-  if (!modal) return;
-
-  if (event && event.target !== modal) return;
-
-  modal.style.display = "none";
-};
