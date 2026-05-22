@@ -614,15 +614,11 @@ body {
   margin: 0;
 }
 
-/* Row status colours */
-tr.status-good td   { background: var(--green-bg) !important; }
-tr.status-warning td { background: var(--orange-bg) !important; }
-tr.status-danger td  { background: var(--red-bg) !important; }
+/* Row status colours — badge uniquement sur la cellule stock */
+tr.status-good .stockCell    { background: var(--green-bg) !important; color: var(--green-text); font-weight: 700; }
+tr.status-warning .stockCell { background: var(--orange-bg) !important; color: var(--orange-text); font-weight: 700; }
+tr.status-danger .stockCell  { background: var(--red-bg) !important; color: var(--red-text); font-weight: 700; }
 tr.status-selected td { background: var(--selected-bg) !important; }
-
-tr.status-good:hover td   { filter: brightness(0.97); }
-tr.status-warning:hover td { filter: brightness(0.97); }
-tr.status-danger:hover td  { filter: brightness(0.97); }
 
 /* ===================== RIGHT PANEL ===================== */
 
