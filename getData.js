@@ -7,8 +7,7 @@ let allProductsData = [];
 let stockFilterMode = "all";
 let emplacementFilterMode = "all";
 
-const ROWS_PER_PAGE = 10;
-let currentPage = 1;
+let currentLetter = "A";
 let currentFilteredData = [];
 
 /* ===================== OUTILS ===================== */
@@ -194,7 +193,7 @@ function applyFilters() {
   }
 
   currentFilteredData = filteredData;
-  currentPage = 1;
+  currentLetter = "A";
   updateDashboard();
   renderTable(currentFilteredData);
 }
@@ -247,12 +246,6 @@ function ajouterCelluleActions(tr, codeBarre) {
 function renderTable(data) {
   produitsParCode = {};
   $("product").innerHTML = "";
-
-  const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
-  if (currentPage > totalPages) currentPage = totalPages;
-
-  const start = (currentPage - 1) * ROWS_PER_PAGE;
-  const pageData = data.slice(start, start + ROWS_PER_PAGE);
 
   const table = document.createElement("table");
   const thead = document.createElement("thead");
@@ -313,12 +306,21 @@ function renderTable(data) {
   thead.appendChild(trHead);
   table.appendChild(thead);
 
-  // Remplir produitsParCode avec TOUTES les données filtrées (pas seulement la page)
-  // pour que les actions (scan, modal, etc.) fonctionnent sur tous les produits
+  // Déterminer quelles lettres sont présentes dans les données
+  const availableLetters = new Set(
+    data.map(item => String(item.nom || "").trim().toUpperCase().charAt(0)).filter(c => c >= "A" && c <= "Z")
+  );
+
+  // Filtrer par lettre sélectionnée
+  const visibleData = currentLetter === "all"
+    ? data
+    : data.filter(item => String(item.nom || "").trim().toUpperCase().startsWith(currentLetter));
+
   data.forEach(item => {
     const code = normalizeCode(item.code_barre);
     const tr = document.createElement("tr");
-    tr.style.display = "none"; // masqué par défaut, révélé ci-dessous pour la page courante
+    const nomInitial = String(item.nom || "").trim().toUpperCase().charAt(0);
+    tr.style.display = (currentLetter === "all" || nomInitial === currentLetter) ? "" : "none";
 
     const tdCode = document.createElement("td");
     tdCode.textContent = code;
@@ -393,60 +395,46 @@ function renderTable(data) {
     updateRowStatus(tr);
   });
 
-  // Afficher uniquement les lignes de la page courante
-  pageData.forEach(item => {
-    const code = normalizeCode(item.code_barre);
-    if (produitsParCode[code]) {
-      produitsParCode[code].row.style.display = "";
-    }
-  });
-
   table.appendChild(tbody);
+
+  // ===== BARRE DE LETTRES =====
+  const letterBar = document.createElement("div");
+  letterBar.className = "letter-bar";
+
+  // Bouton "Tous"
+  const btnAll = document.createElement("button");
+  btnAll.textContent = "Tous";
+  btnAll.className = "letter-btn" + (currentLetter === "all" ? " active" : "");
+  btnAll.onclick = () => {
+    currentLetter = "all";
+    renderTable(currentFilteredData);
+  };
+  letterBar.appendChild(btnAll);
+
+  for (let i = 65; i <= 90; i++) {
+    const letter = String.fromCharCode(i);
+    const btn = document.createElement("button");
+    btn.textContent = letter;
+    btn.className = "letter-btn" + (letter === currentLetter ? " active" : "") + (!availableLetters.has(letter) ? " disabled" : "");
+    btn.disabled = !availableLetters.has(letter);
+    btn.onclick = () => {
+      currentLetter = letter;
+      renderTable(currentFilteredData);
+    };
+    letterBar.appendChild(btn);
+  }
+
+  // Afficher la barre AU DESSUS du tableau
+  $("product").insertBefore(letterBar, table);
   $("product").appendChild(table);
 
-  // ===== CONTRÔLES DE PAGINATION =====
-  if (totalPages > 1) {
-    const pagination = document.createElement("div");
-    pagination.className = "pagination";
-
-    const btnPrev = document.createElement("button");
-    btnPrev.textContent = "‹ Précédent";
-    btnPrev.disabled = currentPage === 1;
-    btnPrev.onclick = () => {
-      currentPage--;
-      renderTable(currentFilteredData);
-    };
-    pagination.appendChild(btnPrev);
-
-    for (let i = 1; i <= totalPages; i++) {
-      const btnPage = document.createElement("button");
-      btnPage.textContent = i;
-      btnPage.className = "page-btn" + (i === currentPage ? " active" : "");
-      btnPage.onclick = (function(page) {
-        return function() {
-          currentPage = page;
-          renderTable(currentFilteredData);
-        };
-      })(i);
-      pagination.appendChild(btnPage);
-    }
-
-    const btnNext = document.createElement("button");
-    btnNext.textContent = "Suivant ›";
-    btnNext.disabled = currentPage === totalPages;
-    btnNext.onclick = () => {
-      currentPage++;
-      renderTable(currentFilteredData);
-    };
-    pagination.appendChild(btnNext);
-
-    const info = document.createElement("span");
-    info.className = "pagination-info";
-    info.textContent = `Page ${currentPage} / ${totalPages} — ${data.length} produit(s)`;
-    pagination.appendChild(info);
-
-    $("product").appendChild(pagination);
-  }
+  // Info compteur
+  const info = document.createElement("div");
+  info.className = "pagination-info";
+  info.textContent = currentLetter === "all"
+    ? `${data.length} produit(s)`
+    : `${visibleData.length} produit(s) — Lettre "${currentLetter}"`;
+  $("product").appendChild(info);
 }
 
 /* ===================== STOCK ===================== */
