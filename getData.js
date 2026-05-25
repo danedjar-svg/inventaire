@@ -7,6 +7,10 @@ let allProductsData = [];
 let stockFilterMode = "all";
 let emplacementFilterMode = "all";
 
+const ROWS_PER_PAGE = 10;
+let currentPage = 1;
+let currentFilteredData = [];
+
 /* ===================== OUTILS ===================== */
 
 function $(id) {
@@ -189,8 +193,10 @@ function applyFilters() {
     });
   }
 
+  currentFilteredData = filteredData;
+  currentPage = 1;
   updateDashboard();
-  renderTable(filteredData);
+  renderTable(currentFilteredData);
 }
 
 /* ===================== TABLEAU ===================== */
@@ -241,6 +247,12 @@ function ajouterCelluleActions(tr, codeBarre) {
 function renderTable(data) {
   produitsParCode = {};
   $("product").innerHTML = "";
+
+  const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = (currentPage - 1) * ROWS_PER_PAGE;
+  const pageData = data.slice(start, start + ROWS_PER_PAGE);
 
   const table = document.createElement("table");
   const thead = document.createElement("thead");
@@ -301,9 +313,12 @@ function renderTable(data) {
   thead.appendChild(trHead);
   table.appendChild(thead);
 
+  // Remplir produitsParCode avec TOUTES les données filtrées (pas seulement la page)
+  // pour que les actions (scan, modal, etc.) fonctionnent sur tous les produits
   data.forEach(item => {
     const code = normalizeCode(item.code_barre);
     const tr = document.createElement("tr");
+    tr.style.display = "none"; // masqué par défaut, révélé ci-dessous pour la page courante
 
     const tdCode = document.createElement("td");
     tdCode.textContent = code;
@@ -378,8 +393,60 @@ function renderTable(data) {
     updateRowStatus(tr);
   });
 
+  // Afficher uniquement les lignes de la page courante
+  pageData.forEach(item => {
+    const code = normalizeCode(item.code_barre);
+    if (produitsParCode[code]) {
+      produitsParCode[code].row.style.display = "";
+    }
+  });
+
   table.appendChild(tbody);
   $("product").appendChild(table);
+
+  // ===== CONTRÔLES DE PAGINATION =====
+  if (totalPages > 1) {
+    const pagination = document.createElement("div");
+    pagination.className = "pagination";
+
+    const btnPrev = document.createElement("button");
+    btnPrev.textContent = "‹ Précédent";
+    btnPrev.disabled = currentPage === 1;
+    btnPrev.onclick = () => {
+      currentPage--;
+      renderTable(currentFilteredData);
+    };
+    pagination.appendChild(btnPrev);
+
+    for (let i = 1; i <= totalPages; i++) {
+      const btnPage = document.createElement("button");
+      btnPage.textContent = i;
+      btnPage.className = "page-btn" + (i === currentPage ? " active" : "");
+      btnPage.onclick = (function(page) {
+        return function() {
+          currentPage = page;
+          renderTable(currentFilteredData);
+        };
+      })(i);
+      pagination.appendChild(btnPage);
+    }
+
+    const btnNext = document.createElement("button");
+    btnNext.textContent = "Suivant ›";
+    btnNext.disabled = currentPage === totalPages;
+    btnNext.onclick = () => {
+      currentPage++;
+      renderTable(currentFilteredData);
+    };
+    pagination.appendChild(btnNext);
+
+    const info = document.createElement("span");
+    info.className = "pagination-info";
+    info.textContent = `Page ${currentPage} / ${totalPages} — ${data.length} produit(s)`;
+    pagination.appendChild(info);
+
+    $("product").appendChild(pagination);
+  }
 }
 
 /* ===================== STOCK ===================== */
