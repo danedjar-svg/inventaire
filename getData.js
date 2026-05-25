@@ -425,7 +425,7 @@ function renderTable(data) {
   }
 
   // Afficher la barre AU DESSUS du tableau
-  $("product").insertBefore(letterBar, table);
+  $("product").appendChild(letterBar);
   $("product").appendChild(table);
 
   // Info compteur
