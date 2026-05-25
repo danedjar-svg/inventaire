@@ -592,13 +592,13 @@ body {
 #product td button:hover { opacity: 0.85; transform: scale(1.05); }
 
 #product td button:first-child {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #16a34a;
+  color: #ffffff;
 }
 
 #product td button:last-child {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
 }
 
 #product td select {
@@ -851,37 +851,38 @@ tr.status-selected td { background: var(--selected-bg) !important; }
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
 }
-/* ===================== PAGINATION ===================== */
+/* ===================== BARRE DE LETTRES ===================== */
 
-.pagination {
+.letter-bar {
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 10px 0;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
 }
 
-.pagination button {
-  padding: 6px 12px;
+.letter-btn {
+  padding: 4px 9px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--surface);
   color: var(--text-primary);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  min-width: 36px;
+  min-width: 30px;
+  text-align: center;
 }
 
-.pagination button:hover:not(:disabled) {
+.letter-btn:hover:not(:disabled) {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
 
-.pagination button.active {
+.letter-btn.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
@@ -889,13 +890,16 @@ tr.status-selected td { background: var(--selected-bg) !important; }
   pointer-events: none;
 }
 
-.pagination button:disabled {
-  opacity: 0.35;
+.letter-btn.disabled,
+.letter-btn:disabled {
+  opacity: 0.25;
   cursor: not-allowed;
 }
 
 .pagination-info {
-  margin-left: 10px;
+  margin-top: 10px;
   font-size: 12.5px;
   color: var(--text-secondary);
+  text-align: right;
+  padding-right: 4px;
 }
