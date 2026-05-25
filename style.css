@@ -615,9 +615,12 @@ body {
 }
 
 /* Row status colours — badge uniquement sur la cellule stock */
-tr.status-good .stockCell    { background: var(--green-bg) !important; color: var(--green-text); font-weight: 700; }
-tr.status-warning .stockCell { background: var(--orange-bg) !important; color: var(--orange-text); font-weight: 700; }
-tr.status-danger .stockCell  { background: var(--red-bg) !important; color: var(--red-text); font-weight: 700; }
+tr.status-good .stockCell    { background: transparent !important; }
+tr.status-good .stockCell span    { background: #16a34a; color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 5px; display: inline-block; }
+tr.status-warning .stockCell { background: transparent !important; }
+tr.status-warning .stockCell span { background: #d97706; color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 5px; display: inline-block; }
+tr.status-danger .stockCell  { background: transparent !important; }
+tr.status-danger .stockCell span  { background: #dc2626; color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 5px; display: inline-block; }
 tr.status-selected td { background: var(--selected-bg) !important; }
 
 /* ===================== RIGHT PANEL ===================== */

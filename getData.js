@@ -331,7 +331,9 @@ function renderTable(data) {
     tr.appendChild(tdNom);
 
     const tdStock = document.createElement("td");
-    tdStock.textContent = item.stock ?? 0;
+    const stockSpan = document.createElement("span");
+    stockSpan.textContent = item.stock ?? 0;
+    tdStock.appendChild(stockSpan);
     tdStock.classList.add("stockCell");
     tr.appendChild(tdStock);
 
@@ -389,7 +391,7 @@ function renderTable(data) {
     produitsParCode[code] = {
       nom: item.nom || "",
       row: tr,
-      stockCell: tdStock
+      stockCell: stockSpan
     };
 
     updateRowStatus(tr);
