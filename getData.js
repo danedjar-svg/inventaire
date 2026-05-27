@@ -126,7 +126,7 @@ async function getData() {
 
   if (error) {
     console.error(error);
-    alert("Erreur Supabase");
+    showToast("Erreur Supabase", "error");
     return;
   }
 
@@ -365,7 +365,7 @@ function renderTable(data) {
 
       if (error) {
         console.error(error);
-        alert("Erreur changement emplacement.");
+        showToast("Erreur changement emplacement.", "error");
         return;
       }
 
@@ -449,7 +449,7 @@ async function updateStock(code, nouveauStock) {
 
   if (error) {
     console.error(error);
-    alert("Erreur mise à jour du stock.");
+    showToast("Erreur mise à jour du stock.", "error");
     return false;
   }
 
@@ -459,10 +459,7 @@ async function updateStock(code, nouveauStock) {
   if (nouveauStock <= 0) {
     const info = produitsParCode[code];
     const nom = info ? info.nom : code;
-    const msg = nouveauStock < 0
-      ? `⚠️ Stock négatif !\n\n${nom}\nStock actuel : ${nouveauStock}`
-      : `⚠️ Stock épuisé !\n\n${nom}\nLe stock est à 0.`;
-    alert(msg);
+    showStockAlert(nom, nouveauStock);
   }
 
   return true;
@@ -496,7 +493,7 @@ async function definirStock(code = selectedCode, valeur = null) {
   const quantite = valeur !== null ? toNum(valeur, NaN) : NaN;
 
   if (!Number.isFinite(quantite)) {
-    alert("Valeur invalide.");
+    showToast("Valeur invalide.", "warning");
     return;
   }
 
@@ -522,7 +519,7 @@ async function handleBarcodeScan(event) {
 
   if (!produit) {
     result.textContent = "Produit non trouvé : " + code;
-    alert("Produit non trouvé : " + code);
+    showToast("Produit non trouvé : " + code, "warning");
     input.value = "";
     input.focus();
     return;
@@ -546,7 +543,7 @@ async function handleBarcodeScan(event) {
     const quantite = toNum(valeur, NaN);
 
     if (!Number.isFinite(quantite)) {
-      alert("Valeur invalide.");
+      showToast("Valeur invalide.", "warning");
       input.value = "";
       input.focus();
       return;
@@ -656,7 +653,7 @@ async function modalAddProduct() {
   const emplacement = $("m_new_emplacement").value;
 
   if (!code || !nom || !emplacement) {
-    alert("Code barre, nom et emplacement obligatoires.");
+    showToast("Code barre, nom et emplacement obligatoires.", "warning");
     return;
   }
 
@@ -671,7 +668,7 @@ async function modalAddProduct() {
 
   if (error) {
     console.error(error);
-    alert("Erreur ajout produit.");
+    showToast("Erreur ajout produit.", "error");
     return;
   }
 
@@ -719,7 +716,7 @@ async function modalEditProduct() {
 
   if (error) {
     console.error(error);
-    alert("Erreur modification.");
+    showToast("Erreur modification.", "error");
     return;
   }
 
@@ -755,7 +752,7 @@ async function modalDeleteProduct() {
 
   if (error) {
     console.error(error);
-    alert("Erreur suppression.");
+    showToast("Erreur suppression.", "error");
     return;
   }
 
@@ -813,7 +810,7 @@ async function modalDefinirStock() {
   if (!code) return;
 
   if (!Number.isFinite(valeur)) {
-    alert("Valeur invalide.");
+    showToast("Valeur invalide.", "warning");
     return;
   }
 
@@ -823,6 +820,67 @@ async function modalDefinirStock() {
     $("m_input_stock").value = "";
     $("m_affichage_stock").textContent = valeur;
   }
+}
+
+/* ===================== TOASTS ===================== */
+
+function showToast(message, type = "info") {
+  const id = "toast-" + Date.now();
+  const icons = { error: "❌", warning: "⚠️", info: "ℹ️", success: "✅" };
+
+  const toast = document.createElement("div");
+  toast.id = id;
+  toast.className = `app-toast app-toast--${type}`;
+  toast.innerHTML = `
+    <div class="app-toast-icon">${icons[type] || "ℹ️"}</div>
+    <div class="app-toast-message">${message}</div>
+    <button class="app-toast-close" onclick="document.getElementById('${id}').remove()">✕</button>
+  `;
+
+  const offset = document.querySelectorAll(".app-toast").length * 70;
+  toast.style.bottom = (28 + offset) + "px";
+
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("app-toast--visible"));
+
+  setTimeout(() => {
+    toast.classList.remove("app-toast--visible");
+    toast.addEventListener("transitionend", () => toast.remove(), { once: true });
+  }, 5000);
+}
+
+/* ===================== ALERTE STOCK ===================== */
+
+function showStockAlert(nom, stock) {
+  // Supprimer une alerte existante si déjà présente
+  const existing = document.getElementById("stock-alert-toast");
+  if (existing) existing.remove();
+
+  const isNeg = stock < 0;
+
+  const toast = document.createElement("div");
+  toast.id = "stock-alert-toast";
+  toast.innerHTML = `
+    <div class="stock-toast-icon">${isNeg ? "📉" : "📦"}</div>
+    <div class="stock-toast-body">
+      <div class="stock-toast-title">${isNeg ? "Stock négatif !" : "Stock épuisé !"}</div>
+      <div class="stock-toast-nom">${nom}</div>
+      <div class="stock-toast-val">Stock actuel : <strong>${stock}</strong></div>
+    </div>
+    <button class="stock-toast-close" onclick="document.getElementById('stock-alert-toast').remove()">✕</button>
+  `;
+  toast.className = isNeg ? "stock-toast stock-toast--neg" : "stock-toast stock-toast--zero";
+
+  document.body.appendChild(toast);
+
+  // Entrée animée
+  requestAnimationFrame(() => toast.classList.add("stock-toast--visible"));
+
+  // Disparaît automatiquement après 6s
+  setTimeout(() => {
+    toast.classList.remove("stock-toast--visible");
+    toast.addEventListener("transitionend", () => toast.remove(), { once: true });
+  }, 6000);
 }
 
 /* ===================== EVENTS ===================== */
