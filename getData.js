@@ -454,6 +454,17 @@ async function updateStock(code, nouveauStock) {
   }
 
   await getData();
+
+  // Alerte stock bas : 0 ou négatif
+  if (nouveauStock <= 0) {
+    const info = produitsParCode[code];
+    const nom = info ? info.nom : code;
+    const msg = nouveauStock < 0
+      ? `⚠️ Stock négatif !\n\n${nom}\nStock actuel : ${nouveauStock}`
+      : `⚠️ Stock épuisé !\n\n${nom}\nLe stock est à 0.`;
+    alert(msg);
+  }
+
   return true;
 }
 
