@@ -27,6 +27,15 @@ function normalizeCode(code) {
     .replace(/\./g, "");
 }
 
+function getInitial(nom) {
+  return String(nom || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // enlève les accents (É->E, À->A, etc.)
+    .charAt(0);
+}
+
 function toNum(v, fallback = 0) {
   const n = parseFloat(String(v).replace(",", "."));
   return Number.isFinite(n) ? n : fallback;
@@ -253,7 +262,7 @@ function renderTable(data) {
   const trHead = document.createElement("tr");
 
   const thCode = document.createElement("th");
-  thCode.textContent = "Code barre";
+  thCode.textContent = "Référence";
   trHead.appendChild(thCode);
 
   const thNom = document.createElement("th");
@@ -308,19 +317,21 @@ function renderTable(data) {
 
   // Déterminer quelles lettres sont présentes dans les données
   const availableLetters = new Set(
-    data.map(item => String(item.nom || "").trim().toUpperCase().charAt(0)).filter(c => c >= "A" && c <= "Z")
+    data.map(item => getInitial(item.nom)).filter(c => c >= "A" && c <= "Z")
   );
 
   // Filtrer par lettre sélectionnée
   const visibleData = currentLetter === "all"
     ? data
-    : data.filter(item => String(item.nom || "").trim().toUpperCase().startsWith(currentLetter));
+    : data.filter(item => getInitial(item.nom) === currentLetter);
 
   data.forEach(item => {
     const code = normalizeCode(item.code_barre);
     const tr = document.createElement("tr");
-    const nomInitial = String(item.nom || "").trim().toUpperCase().charAt(0);
-    tr.style.display = (currentLetter === "all" || nomInitial === currentLetter) ? "" : "none";
+    const nomInitial = getInitial(item.nom);
+    const matchLetter = currentLetter === "all" || nomInitial === currentLetter;
+    tr.style.display = matchLetter ? "" : "none";
+    tr.dataset.letterMatch = matchLetter ? "1" : "0";
 
     const tdCode = document.createElement("td");
     tdCode.textContent = code;
@@ -384,6 +395,16 @@ function renderTable(data) {
       ) return;
 
       setSelected(code);
+    };
+
+    tr.ondblclick = function (event) {
+      if (
+        event.target.tagName === "BUTTON" ||
+        event.target.tagName === "SELECT"
+      ) return;
+
+      setSelected(code);
+      openModalProduitsOnStock(code);
     };
 
     tbody.appendChild(tr);
@@ -653,7 +674,7 @@ async function modalAddProduct() {
   const emplacement = $("m_new_emplacement").value;
 
   if (!code || !nom || !emplacement) {
-    showToast("Code barre, nom et emplacement obligatoires.", "warning");
+    showToast("Référence, nom et emplacement obligatoires.", "warning");
     return;
   }
 
@@ -819,6 +840,155 @@ async function modalDefinirStock() {
   if (ok) {
     $("m_input_stock").value = "";
     $("m_affichage_stock").textContent = valeur;
+  }
+}
+
+/* ===================== MODAL PRODUITS — OUVERTURE DIRECTE STOCK ===================== */
+
+function openModalProduitsOnStock(code) {
+  // Ouvre le modal normalement (peuple les selects)
+  openModalProduits();
+
+  // Bascule sur l'onglet "Ajuster stock"
+  const stockTabBtn = document.querySelector(".modal-tab[onclick*=\"'stock'\"]");
+  if (stockTabBtn) {
+    switchModalTab("stock", stockTabBtn);
+  }
+
+  // Pré-sélectionne le produit dans le select
+  const stockSelect = document.getElementById("m_stock_select");
+  if (stockSelect) {
+    stockSelect.value = code;
+    // Déclenche l'affichage des champs
+    modalFillStock();
+  }
+}
+
+/* ===================== MODAL KPI ===================== */
+
+function openKpiModal(filtre) {
+  const modal = document.getElementById("modal_kpi");
+  const title = document.getElementById("modal_kpi_title");
+  const list  = document.getElementById("modal_kpi_list");
+
+  if (!modal || !title || !list) return;
+
+  // Titre
+  const titres = {
+    "all":               "Tous les produits",
+    "critiques":         "Produits critiques (stock ≤ 0)",
+    "Bungalow":          "Bungalow",
+    "Container Retrofit":"Container Retrofit",
+    "Container SAV":     "Container SAV"
+  };
+  title.textContent = titres[filtre] || filtre;
+
+  // Filtrage
+  let data = [...allProductsData];
+  if (filtre === "critiques") {
+    data = data.filter(p => toNum(p.stock, 0) <= 0);
+  } else if (filtre !== "all") {
+    data = data.filter(p => (p.emplacement || "") === filtre);
+  }
+
+  // Construction de la liste
+  list.innerHTML = "";
+
+  if (data.length === 0) {
+    list.innerHTML = "<p style='color:var(--text-muted); text-align:center; padding:24px;'>Aucun produit.</p>";
+  } else {
+    data.forEach(p => {
+      const stock = toNum(p.stock, 0);
+      const stockMin = toNum(p.stock_min, 1);
+      const stockMax = toNum(p.stock_max, 7);
+
+      let statusClass = "status-good";
+      if (stock < 0 || stock < stockMin || stock > stockMax) statusClass = "status-danger";
+      else if (stock === stockMin + 1 || stock === stockMax - 1) statusClass = "status-warning";
+
+      const row = document.createElement("div");
+      row.className = "kpi-modal-row " + statusClass;
+      row.innerHTML = `
+        <span class="kpi-modal-nom">${p.nom || "—"}</span>
+        <span class="kpi-modal-code">${normalizeCode(p.code_barre)}</span>
+        <span class="kpi-modal-emplacement">${p.emplacement || "—"}</span>
+        <span class="kpi-modal-stock">Stock : <strong>${stock}</strong></span>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeKpiModal(event) {
+  if (event && event.target !== document.getElementById("modal_kpi")) return;
+  document.getElementById("modal_kpi").style.display = "none";
+}
+
+/* ===================== MODAL PARAMÈTRES ===================== */
+
+function openSettingsModal() {
+  const modal = document.getElementById("modal_settings");
+  if (!modal) return;
+
+  const newPass = document.getElementById("settings_new_password");
+  const confirmPass = document.getElementById("settings_confirm_password");
+  const msg = document.getElementById("settings_password_msg");
+  if (newPass) newPass.value = "";
+  if (confirmPass) confirmPass.value = "";
+  if (msg) { msg.textContent = ""; msg.style.color = ""; }
+
+  modal.style.display = "flex";
+}
+
+function closeSettingsModal(event) {
+  if (event && event.target !== document.getElementById("modal_settings")) return;
+  document.getElementById("modal_settings").style.display = "none";
+}
+
+async function changePassword() {
+  const newPass = document.getElementById("settings_new_password").value;
+  const confirmPass = document.getElementById("settings_confirm_password").value;
+  const msg = document.getElementById("settings_password_msg");
+
+  msg.className = "settings-msg";
+  msg.textContent = "";
+
+  if (!newPass || newPass.length < 6) {
+    msg.classList.add("settings-msg-error");
+    msg.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    msg.classList.add("settings-msg-error");
+    msg.textContent = "Les mots de passe ne correspondent pas.";
+    return;
+  }
+
+  msg.textContent = "Mise à jour en cours...";
+
+  try {
+    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+
+    if (error) {
+      msg.className = "settings-msg settings-msg-error";
+      msg.textContent = "Erreur : " + error.message;
+      showToast("Erreur lors du changement de mot de passe", "error");
+      return;
+    }
+
+    msg.className = "settings-msg settings-msg-success";
+    msg.textContent = "Mot de passe mis à jour avec succès !";
+    showToast("Mot de passe modifié", "success");
+
+    document.getElementById("settings_new_password").value = "";
+    document.getElementById("settings_confirm_password").value = "";
+  } catch (err) {
+    msg.className = "settings-msg settings-msg-error";
+    msg.textContent = "Erreur inattendue : " + err.message;
+    showToast("Erreur lors du changement de mot de passe", "error");
   }
 }
 
