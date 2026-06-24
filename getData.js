@@ -197,9 +197,8 @@ function applyFilters() {
     const normalizeText = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const searchNorm = normalizeText(searchValue);
     filteredData = filteredData.filter(item => {
-      const code = normalizeCode(item.code_barre).toLowerCase();
       const nom = normalizeText(item.nom);
-      return code.includes(searchNorm) || nom.startsWith(searchNorm);
+      return nom.startsWith(searchNorm);
     });
   }
 
