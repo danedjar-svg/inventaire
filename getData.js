@@ -199,12 +199,12 @@ function applyFilters() {
     filteredData = filteredData.filter(item => {
       const code = normalizeCode(item.code_barre).toLowerCase();
       const nom = normalizeText(item.nom);
-      return code.includes(searchNorm) || nom.includes(searchNorm);
+      return code.includes(searchNorm) || nom.startsWith(searchNorm);
     });
   }
 
   currentFilteredData = filteredData;
-  currentLetter = searchValue ? "all" : "A";
+  currentLetter = "A";
   updateDashboard();
   renderTable(currentFilteredData);
 }
