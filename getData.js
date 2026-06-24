@@ -204,7 +204,7 @@ function applyFilters() {
   }
 
   currentFilteredData = filteredData;
-  currentLetter = "A";
+  currentLetter = searchValue ? "all" : "A";
   updateDashboard();
   renderTable(currentFilteredData);
 }
