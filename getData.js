@@ -194,10 +194,12 @@ function applyFilters() {
   const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
   if (searchValue) {
+    const normalizeText = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const searchNorm = normalizeText(searchValue);
     filteredData = filteredData.filter(item => {
       const code = normalizeCode(item.code_barre).toLowerCase();
-      const nom = String(item.nom || "").toLowerCase();
-      return code.includes(searchValue) || nom.includes(searchValue);
+      const nom = normalizeText(item.nom);
+      return code.includes(searchNorm) || nom.includes(searchNorm);
     });
   }
 
