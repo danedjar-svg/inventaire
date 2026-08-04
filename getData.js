@@ -1013,13 +1013,7 @@ function switchSettingsTab(tab, btn) {
   if (btn) btn.classList.add("active");
 
   if (tab === "users") {
-    $("new_user_email").value = "";
-    $("new_user_password").value = "";
-    $("new_user_prenom").value = "";
-    $("new_user_role").value = "";
-    $("new_user_admin").value = "false";
-    $("users_msg").textContent = "";
-    $("users_msg").className = "settings-msg";
+    cancelEditUser();
     loadUsersList();
   }
 }
@@ -1099,6 +1093,8 @@ async function callAdminUsers(action, payload) {
   return data;
 }
 
+let editingUserId = null;
+
 async function loadUsersList() {
   const list = $("users_list");
   list.textContent = "Chargement...";
@@ -1132,13 +1128,27 @@ async function loadUsersList() {
       info.appendChild(name);
       info.appendChild(meta);
 
+      const actions = document.createElement("div");
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "user-row-delete";
+      editBtn.style.background = "var(--blue-accent, #2563eb)";
+      editBtn.style.color = "white";
+      editBtn.textContent = "Modifier";
+      editBtn.onclick = () => startEditUser(u);
+
       const delBtn = document.createElement("button");
       delBtn.className = "user-row-delete";
       delBtn.textContent = "Supprimer";
       delBtn.onclick = () => deleteUserAccount(u.id, u.full_name || u.email);
 
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
       row.appendChild(info);
-      row.appendChild(delBtn);
+      row.appendChild(actions);
       list.appendChild(row);
     });
   } catch (err) {
@@ -1146,19 +1156,88 @@ async function loadUsersList() {
   }
 }
 
+function startEditUser(u) {
+  editingUserId = u.id;
+
+  $("user_form_title").textContent = "Modifier " + (u.full_name || u.email);
+  $("new_user_email_field").style.display = "none";
+  $("new_user_password_field").style.display = "none";
+  $("new_user_prenom").value = u.full_name || "";
+  $("new_user_role").value = u.role || "";
+  $("new_user_admin").value = u.is_admin ? "true" : "false";
+
+  $("user_form_submit_btn").textContent = "Enregistrer les modifications";
+  $("user_form_cancel_btn").style.display = "";
+
+  $("users_msg").textContent = "";
+  $("users_msg").className = "settings-msg";
+
+  $("new_user_prenom").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cancelEditUser() {
+  editingUserId = null;
+
+  $("user_form_title").textContent = "Ajouter un utilisateur";
+  $("new_user_email_field").style.display = "";
+  $("new_user_password_field").style.display = "";
+  $("new_user_email").value = "";
+  $("new_user_password").value = "";
+  $("new_user_prenom").value = "";
+  $("new_user_role").value = "";
+  $("new_user_admin").value = "false";
+
+  $("user_form_submit_btn").textContent = "Créer le compte";
+  $("user_form_cancel_btn").style.display = "none";
+
+  $("users_msg").textContent = "";
+  $("users_msg").className = "settings-msg";
+}
+
 async function addUser() {
   const msg = $("users_msg");
   msg.className = "settings-msg";
 
-  const email = $("new_user_email").value.trim();
-  const password = $("new_user_password").value;
   const prenom = $("new_user_prenom").value.trim();
   const role = $("new_user_role").value.trim() || "Opérateur SAV";
   const admin = $("new_user_admin").value === "true";
 
-  if (!email || !prenom) {
+  if (!prenom) {
     msg.className = "settings-msg settings-msg-error";
-    msg.textContent = "Email et prénom obligatoires.";
+    msg.textContent = "Le prénom est obligatoire.";
+    return;
+  }
+
+  // Mode modification
+  if (editingUserId) {
+    msg.textContent = "Enregistrement en cours...";
+
+    try {
+      await callAdminUsers("update", {
+        user_id: editingUserId,
+        full_name: prenom,
+        role,
+        is_admin: admin
+      });
+
+      showToast("Utilisateur " + prenom + " mis à jour", "success");
+      cancelEditUser();
+      await loadUsersList();
+    } catch (err) {
+      msg.className = "settings-msg settings-msg-error";
+      msg.textContent = "Erreur : " + err.message;
+      showToast("Erreur lors de la modification de l'utilisateur", "error");
+    }
+    return;
+  }
+
+  // Mode création
+  const email = $("new_user_email").value.trim();
+  const password = $("new_user_password").value;
+
+  if (!email) {
+    msg.className = "settings-msg settings-msg-error";
+    msg.textContent = "Email obligatoire.";
     return;
   }
 
@@ -1205,6 +1284,7 @@ async function deleteUserAccount(userId, label) {
   try {
     await callAdminUsers("delete", { user_id: userId });
     showToast("Compte de " + label + " supprimé", "success");
+    if (editingUserId === userId) cancelEditUser();
     await loadUsersList();
   } catch (err) {
     showToast("Erreur : " + err.message, "error");
