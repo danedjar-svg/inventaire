@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000018" defer></script>
+  <script src="getData.js?v=2000019" defer></script>
 </head>
 
 <body>
@@ -434,15 +434,15 @@
         </div>
 
         <div class="settings-section">
-          <h3 class="settings-section-title">Ajouter un utilisateur</h3>
+          <h3 class="settings-section-title" id="user_form_title">Ajouter un utilisateur</h3>
 
           <div class="modal-form">
-            <div class="modal-field">
+            <div class="modal-field" id="new_user_email_field">
               <label>Email</label>
               <input type="email" id="new_user_email" placeholder="prenom@exemple.com">
             </div>
 
-            <div class="modal-field">
+            <div class="modal-field" id="new_user_password_field">
               <label>Mot de passe temporaire</label>
               <input type="password" id="new_user_password" placeholder="Minimum 6 caractères" autocomplete="new-password">
             </div>
@@ -465,7 +465,10 @@
               </div>
             </div>
 
-            <button class="modal-btn-green" onclick="addUser()">Créer le compte</button>
+            <div style="display:flex; gap:10px;">
+              <button class="modal-btn-green" id="user_form_submit_btn" style="flex:1;" onclick="addUser()">Créer le compte</button>
+              <button class="modal-btn-blue" id="user_form_cancel_btn" style="flex:1; display:none;" onclick="cancelEditUser()">Annuler</button>
+            </div>
 
             <div id="users_msg" class="settings-msg"></div>
           </div>
