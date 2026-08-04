@@ -114,6 +114,7 @@ async function login() {
   $("inventory_section").style.display = "block";
   $("login_error").style.display = "none";
 
+  await updateUserProfileDisplay();
   await getData();
 }
 
@@ -123,6 +124,19 @@ async function logout() {
 
   $("login_section").style.display = "block";
   $("inventory_section").style.display = "none";
+}
+
+async function updateUserProfileDisplay() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return;
+
+  const meta = user.user_metadata || {};
+  const nom = meta.full_name || user.email.split("@")[0];
+  const statut = meta.role || "Opérateur SAV";
+
+  $("avatar_name").textContent = nom;
+  $("avatar_role").textContent = statut;
+  $("avatar_letter").textContent = getInitial(nom);
 }
 
 /* ===================== DONNEES SUPABASE ===================== */
@@ -1102,6 +1116,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   ) {
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
+    await updateUserProfileDisplay();
     await getData();
   }
 
