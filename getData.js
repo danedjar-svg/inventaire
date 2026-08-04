@@ -604,23 +604,35 @@ async function handleBarcodeScan(event) {
   const choix = prompt(
     "Entrée / Sortie\n\nProduit : " + produit.nom +
     "\nStock actuel : " + toNum(produit.stockCell.textContent, 0) +
-    "\n\n1 = Entrée +1" +
-    "\n2 = Sortie -1"
+    "\n\n1 = Entrée" +
+    "\n2 = Sortie"
   );
 
-  if (choix === "1") {
-    const nouveau = toNum(produit.stockCell.textContent, 0) + 1;
-    const ok = await updateStock(code, nouveau);
+  if (choix === "1" || choix === "2") {
+    const qteStr = prompt("Quantité à " + (choix === "1" ? "entrer" : "sortir") + " :", "1");
 
-    if (ok) {
-      result.textContent = "Entrée +1 : " + produit.nom;
+    if (qteStr === null) {
+      result.textContent = "Action annulée : " + produit.nom;
+      input.value = "";
+      input.focus();
+      return;
     }
-  } else if (choix === "2") {
-    const nouveau = toNum(produit.stockCell.textContent, 0) - 1;
+
+    const quantite = toNum(qteStr, NaN);
+
+    if (!Number.isFinite(quantite) || quantite <= 0) {
+      showToast("Quantité invalide.", "warning");
+      input.value = "";
+      input.focus();
+      return;
+    }
+
+    const stockActuel = toNum(produit.stockCell.textContent, 0);
+    const nouveau = choix === "1" ? stockActuel + quantite : stockActuel - quantite;
     const ok = await updateStock(code, nouveau);
 
     if (ok) {
-      result.textContent = "Sortie -1 : " + produit.nom;
+      result.textContent = (choix === "1" ? "Entrée +" : "Sortie -") + quantite + " : " + produit.nom;
     }
   } else {
     result.textContent = "Action annulée : " + produit.nom;
