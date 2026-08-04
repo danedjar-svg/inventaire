@@ -304,8 +304,16 @@ function ajouterCelluleActions(tr, codeBarre) {
     await retrait(codeBarre);
   };
 
+  const btnQr = document.createElement("button");
+  btnQr.textContent = "QR";
+  btnQr.onclick = event => {
+    event.stopPropagation();
+    openQrModal(codeBarre);
+  };
+
   td.appendChild(btnPlus);
   td.appendChild(btnMoins);
+  td.appendChild(btnQr);
   tr.appendChild(td);
 }
 
@@ -1014,7 +1022,44 @@ function openModalProduitsOnStock(code) {
   }
 }
 
-/* ===================== MODAL KPI ===================== */
+/* ===================== MODAL QR CODE ===================== */
+
+let currentQrCode = "";
+
+function openQrModal(codeBarre) {
+  currentQrCode = codeBarre;
+
+  const modal = document.getElementById("modal_qr");
+  const canvas = document.getElementById("qr_canvas");
+  const label = document.getElementById("qr_code_label");
+
+  document.getElementById("modal_qr_title").textContent = "QR Code — " + codeBarre;
+  label.textContent = codeBarre;
+
+  QRCode.toCanvas(canvas, codeBarre, { width: 220, margin: 2 }, function (error) {
+    if (error) {
+      console.error(error);
+      showToast("Erreur génération QR code.", "error");
+    }
+  });
+
+  modal.style.display = "flex";
+}
+
+function closeQrModal(event) {
+  if (event && event.target !== document.getElementById("modal_qr")) return;
+  document.getElementById("modal_qr").style.display = "none";
+}
+
+function downloadQrCode() {
+  const canvas = document.getElementById("qr_canvas");
+  const link = document.createElement("a");
+  link.download = "QR_" + currentQrCode + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+
 
 function openKpiModal(filtre) {
   const modal = document.getElementById("modal_kpi");

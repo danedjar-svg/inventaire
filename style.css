@@ -568,7 +568,7 @@ body {
 #product thead th:nth-child(5) { width: 35px; }
 #product thead th:nth-child(6) { width: 130px; }
 #product thead th:nth-child(7) { width: 140px; }
-#product thead th:nth-child(8) { width: 70px; }
+#product thead th:nth-child(8) { width: 95px; }
 
 #product thead th {
   background: var(--blue-dark);
@@ -647,14 +647,20 @@ body {
 
 #product td button:hover { opacity: 0.85; transform: scale(1.05); }
 
-#product td button:first-child {
+#product td button:nth-child(1) {
   background: #16a34a;
   color: #ffffff;
 }
 
-#product td button:last-child {
+#product td button:nth-child(2) {
   background: #dc2626;
   color: #ffffff;
+}
+
+#product td button:nth-child(3) {
+  background: var(--blue-dark);
+  color: #ffffff;
+  font-size: 10px;
 }
 
 #product td select {
@@ -799,6 +805,28 @@ tr.status-selected td { background: var(--selected-bg) !important; }
   border-radius: 8px;
   width: auto;
   transition: background 0.15s, color 0.15s;
+}
+
+.qr-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 24px;
+}
+
+.qr-modal-body canvas {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: white;
+}
+
+.qr-code-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
 }
 
 .modal-tabs {

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ALSTOM - Gestion de Stock SAV</title>
 
-  <link rel="stylesheet" href="style.css?v=2000016">
+  <link rel="stylesheet" href="style.css?v=2000017">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000023" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="getData.js?v=2000024" defer></script>
 </head>
 
 <body>
@@ -427,6 +428,21 @@
         <button class="modal-close" onclick="document.getElementById('modal_kpi').style.display='none'">✕</button>
       </div>
       <div id="modal_kpi_list" class="kpi-modal-list"></div>
+    </div>
+  </div>
+
+  <!-- MODAL QR CODE -->
+  <div id="modal_qr" class="modal-overlay" style="display:none;" onclick="closeQrModal(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal_qr_title">QR Code</h2>
+        <button class="modal-close" onclick="document.getElementById('modal_qr').style.display='none'">✕</button>
+      </div>
+      <div class="qr-modal-body">
+        <canvas id="qr_canvas"></canvas>
+        <div id="qr_code_label" class="qr-code-label"></div>
+        <button class="modal-btn-blue" onclick="downloadQrCode()">Télécharger</button>
+      </div>
     </div>
   </div>
 
