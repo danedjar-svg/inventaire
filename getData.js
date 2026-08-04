@@ -140,8 +140,8 @@ async function updateUserProfileDisplay() {
   $("avatar_letter").textContent = getInitial(nom);
 
   isAdmin = meta.is_admin === true;
-  const menuUsers = $("menu_utilisateurs");
-  if (menuUsers) menuUsers.style.display = isAdmin ? "flex" : "none";
+  const tabUsers = $("settings_tab_btn_users");
+  if (tabUsers) tabUsers.style.display = isAdmin ? "" : "none";
 }
 
 /* ===================== DONNEES SUPABASE ===================== */
@@ -959,7 +959,33 @@ function openSettingsModal() {
   if (confirmPass) confirmPass.value = "";
   if (msg) { msg.textContent = ""; msg.style.color = ""; }
 
+  switchSettingsTab("password", $("settings_tab_btn_password"));
+
   modal.style.display = "flex";
+}
+
+function switchSettingsTab(tab, btn) {
+  ["password", "users"].forEach(t => {
+    $("settings_tab_" + t).style.display = "none";
+  });
+
+  document.querySelectorAll("#modal_settings .modal-tab").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  $("settings_tab_" + tab).style.display = "block";
+  if (btn) btn.classList.add("active");
+
+  if (tab === "users") {
+    $("new_user_email").value = "";
+    $("new_user_password").value = "";
+    $("new_user_prenom").value = "";
+    $("new_user_role").value = "";
+    $("new_user_admin").value = "false";
+    $("users_msg").textContent = "";
+    $("users_msg").className = "settings-msg";
+    loadUsersList();
+  }
 }
 
 function closeSettingsModal(event) {
@@ -1035,30 +1061,6 @@ async function callAdminUsers(action, payload) {
   if (data && data.error) throw new Error(data.error);
 
   return data;
-}
-
-async function openUsersModal() {
-  if (!isAdmin) return;
-
-  const modal = $("modal_users");
-  if (!modal) return;
-
-  modal.style.display = "flex";
-
-  $("new_user_email").value = "";
-  $("new_user_password").value = "";
-  $("new_user_prenom").value = "";
-  $("new_user_role").value = "";
-  $("new_user_admin").value = "false";
-  $("users_msg").textContent = "";
-  $("users_msg").className = "settings-msg";
-
-  await loadUsersList();
-}
-
-function closeUsersModal(event) {
-  if (event && event.target !== $("modal_users")) return;
-  $("modal_users").style.display = "none";
 }
 
 async function loadUsersList() {

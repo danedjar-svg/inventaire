@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ALSTOM - Gestion de Stock SAV</title>
 
-  <link rel="stylesheet" href="style.css?v=2000014">
+  <link rel="stylesheet" href="style.css?v=2000015">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000014" defer></script>
+  <script src="getData.js?v=2000015" defer></script>
 </head>
 
 <body>
@@ -81,10 +81,6 @@
 
           <div class="menu-item" data-action="parametres" onclick="openSettingsModal()">
             Paramètres
-          </div>
-
-          <div class="menu-item" id="menu_utilisateurs" data-action="utilisateurs" onclick="openUsersModal()" style="display:none;">
-            Utilisateurs
           </div>
 
         </nav>
@@ -398,82 +394,84 @@
         <button class="modal-close" onclick="document.getElementById('modal_settings').style.display='none'">✕</button>
       </div>
 
-      <div class="settings-section">
-
-        <h3 class="settings-section-title">Changer le mot de passe</h3>
-
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Nouveau mot de passe</label>
-            <input type="password" id="settings_new_password" placeholder="Minimum 6 caractères" autocomplete="new-password">
-          </div>
-
-          <div class="modal-field">
-            <label>Confirmer le mot de passe</label>
-            <input type="password" id="settings_confirm_password" placeholder="Retapez le mot de passe" autocomplete="new-password">
-          </div>
-
-          <button class="modal-btn-blue" onclick="changePassword()">
-            Mettre à jour le mot de passe
-          </button>
-
-          <div id="settings_password_msg" class="settings-msg"></div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL UTILISATEURS (admin uniquement) -->
-  <div id="modal_users" class="modal-overlay" style="display:none;" onclick="closeUsersModal(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Gestion des utilisateurs</h2>
-        <button class="modal-close" onclick="document.getElementById('modal_users').style.display='none'">✕</button>
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="settings_tab_btn_password" onclick="switchSettingsTab('password', this)">Mot de passe</button>
+        <button class="modal-tab" id="settings_tab_btn_users" onclick="switchSettingsTab('users', this)" style="display:none;">Utilisateurs</button>
       </div>
 
-      <div class="settings-section">
-        <h3 class="settings-section-title">Utilisateurs existants</h3>
-        <div id="users_list" class="kpi-modal-list">Chargement...</div>
-      </div>
+      <!-- ONGLET MOT DE PASSE -->
+      <div id="settings_tab_password" class="modal-tab-content">
+        <div class="settings-section">
 
-      <div class="settings-section">
-        <h3 class="settings-section-title">Ajouter un utilisateur</h3>
+          <h3 class="settings-section-title">Changer le mot de passe</h3>
 
-        <div class="modal-form">
-          <div class="modal-field">
-            <label>Email</label>
-            <input type="email" id="new_user_email" placeholder="prenom@exemple.com">
+          <div class="modal-form">
+            <div class="modal-field">
+              <label>Nouveau mot de passe</label>
+              <input type="password" id="settings_new_password" placeholder="Minimum 6 caractères" autocomplete="new-password">
+            </div>
+
+            <div class="modal-field">
+              <label>Confirmer le mot de passe</label>
+              <input type="password" id="settings_confirm_password" placeholder="Retapez le mot de passe" autocomplete="new-password">
+            </div>
+
+            <button class="modal-btn-blue" onclick="changePassword()">
+              Mettre à jour le mot de passe
+            </button>
+
+            <div id="settings_password_msg" class="settings-msg"></div>
           </div>
 
-          <div class="modal-field">
-            <label>Mot de passe temporaire</label>
-            <input type="password" id="new_user_password" placeholder="Minimum 6 caractères" autocomplete="new-password">
-          </div>
-
-          <div class="modal-field-row">
-            <div class="modal-field">
-              <label>Prénom</label>
-              <input type="text" id="new_user_prenom" placeholder="Ex: Alain">
-            </div>
-            <div class="modal-field">
-              <label>Rôle affiché</label>
-              <input type="text" id="new_user_role" placeholder="Ex: Opérateur SAV">
-            </div>
-            <div class="modal-field">
-              <label>Droits admin</label>
-              <select id="new_user_admin">
-                <option value="false">Non</option>
-                <option value="true">Oui</option>
-              </select>
-            </div>
-          </div>
-
-          <button class="modal-btn-green" onclick="addUser()">Créer le compte</button>
-
-          <div id="users_msg" class="settings-msg"></div>
         </div>
       </div>
+
+      <!-- ONGLET UTILISATEURS (admin uniquement) -->
+      <div id="settings_tab_users" class="modal-tab-content" style="display:none;">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Utilisateurs existants</h3>
+          <div id="users_list" class="kpi-modal-list">Chargement...</div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Ajouter un utilisateur</h3>
+
+          <div class="modal-form">
+            <div class="modal-field">
+              <label>Email</label>
+              <input type="email" id="new_user_email" placeholder="prenom@exemple.com">
+            </div>
+
+            <div class="modal-field">
+              <label>Mot de passe temporaire</label>
+              <input type="password" id="new_user_password" placeholder="Minimum 6 caractères" autocomplete="new-password">
+            </div>
+
+            <div class="modal-field-row">
+              <div class="modal-field">
+                <label>Prénom</label>
+                <input type="text" id="new_user_prenom" placeholder="Ex: Alain">
+              </div>
+              <div class="modal-field">
+                <label>Rôle affiché</label>
+                <input type="text" id="new_user_role" placeholder="Ex: Opérateur SAV">
+              </div>
+              <div class="modal-field">
+                <label>Droits admin</label>
+                <select id="new_user_admin">
+                  <option value="false">Non</option>
+                  <option value="true">Oui</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="modal-btn-green" onclick="addUser()">Créer le compte</button>
+
+            <div id="users_msg" class="settings-msg"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
