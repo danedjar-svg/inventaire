@@ -1,4 +1,5 @@
 const LOGIN_KEY = "inventaire_logged_in";
+let isAdmin = false;
 
 let produitsParCode = {};
 let selectedCode = "";
@@ -137,6 +138,10 @@ async function updateUserProfileDisplay() {
   $("avatar_name").textContent = nom;
   $("avatar_role").textContent = statut;
   $("avatar_letter").textContent = getInitial(nom);
+
+  isAdmin = meta.is_admin === true;
+  const menuUsers = $("menu_utilisateurs");
+  if (menuUsers) menuUsers.style.display = isAdmin ? "flex" : "none";
 }
 
 /* ===================== DONNEES SUPABASE ===================== */
@@ -1004,6 +1009,167 @@ async function changePassword() {
     msg.className = "settings-msg settings-msg-error";
     msg.textContent = "Erreur inattendue : " + err.message;
     showToast("Erreur lors du changement de mot de passe", "error");
+  }
+}
+
+/* ===================== MODAL UTILISATEURS (ADMIN) ===================== */
+
+async function callAdminUsers(action, payload) {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token;
+
+  const { data, error } = await supabaseClient.functions.invoke("admin-users", {
+    body: { action, payload },
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (error) {
+    let message = error.message || "Erreur inconnue";
+    try {
+      const ctx = await error.context.json();
+      if (ctx && ctx.error) message = ctx.error;
+    } catch (e) {}
+    throw new Error(message);
+  }
+
+  if (data && data.error) throw new Error(data.error);
+
+  return data;
+}
+
+async function openUsersModal() {
+  if (!isAdmin) return;
+
+  const modal = $("modal_users");
+  if (!modal) return;
+
+  modal.style.display = "flex";
+
+  $("new_user_email").value = "";
+  $("new_user_password").value = "";
+  $("new_user_prenom").value = "";
+  $("new_user_role").value = "";
+  $("new_user_admin").value = "false";
+  $("users_msg").textContent = "";
+  $("users_msg").className = "settings-msg";
+
+  await loadUsersList();
+}
+
+function closeUsersModal(event) {
+  if (event && event.target !== $("modal_users")) return;
+  $("modal_users").style.display = "none";
+}
+
+async function loadUsersList() {
+  const list = $("users_list");
+  list.textContent = "Chargement...";
+
+  try {
+    const data = await callAdminUsers("list", {});
+    const users = data.users || [];
+
+    if (users.length === 0) {
+      list.textContent = "Aucun utilisateur.";
+      return;
+    }
+
+    list.innerHTML = "";
+
+    users.forEach(u => {
+      const row = document.createElement("div");
+      row.className = "kpi-modal-row";
+
+      const info = document.createElement("div");
+      info.className = "user-row-info";
+
+      const name = document.createElement("div");
+      name.className = "user-row-name";
+      name.textContent = (u.full_name || u.email) + (u.is_admin ? " (admin)" : "");
+
+      const meta = document.createElement("div");
+      meta.className = "user-row-meta";
+      meta.textContent = u.email + (u.role ? " — " + u.role : "");
+
+      info.appendChild(name);
+      info.appendChild(meta);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "user-row-delete";
+      delBtn.textContent = "Supprimer";
+      delBtn.onclick = () => deleteUserAccount(u.id, u.full_name || u.email);
+
+      row.appendChild(info);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    list.textContent = "Erreur : " + err.message;
+  }
+}
+
+async function addUser() {
+  const msg = $("users_msg");
+  msg.className = "settings-msg";
+
+  const email = $("new_user_email").value.trim();
+  const password = $("new_user_password").value;
+  const prenom = $("new_user_prenom").value.trim();
+  const role = $("new_user_role").value.trim() || "Opérateur SAV";
+  const admin = $("new_user_admin").value === "true";
+
+  if (!email || !prenom) {
+    msg.className = "settings-msg settings-msg-error";
+    msg.textContent = "Email et prénom obligatoires.";
+    return;
+  }
+
+  if (!password || password.length < 6) {
+    msg.className = "settings-msg settings-msg-error";
+    msg.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    return;
+  }
+
+  msg.textContent = "Création en cours...";
+
+  try {
+    await callAdminUsers("create", {
+      email,
+      password,
+      full_name: prenom,
+      role,
+      is_admin: admin
+    });
+
+    msg.className = "settings-msg settings-msg-success";
+    msg.textContent = "Utilisateur créé avec succès !";
+    showToast("Utilisateur " + prenom + " créé", "success");
+
+    $("new_user_email").value = "";
+    $("new_user_password").value = "";
+    $("new_user_prenom").value = "";
+    $("new_user_role").value = "";
+    $("new_user_admin").value = "false";
+
+    await loadUsersList();
+  } catch (err) {
+    msg.className = "settings-msg settings-msg-error";
+    msg.textContent = "Erreur : " + err.message;
+    showToast("Erreur lors de la création de l'utilisateur", "error");
+  }
+}
+
+async function deleteUserAccount(userId, label) {
+  if (!confirm("Supprimer définitivement le compte de " + label + " ? Cette action est irréversible.")) {
+    return;
+  }
+
+  try {
+    await callAdminUsers("delete", { user_id: userId });
+    showToast("Compte de " + label + " supprimé", "success");
+    await loadUsersList();
+  } catch (err) {
+    showToast("Erreur : " + err.message, "error");
   }
 }
 
