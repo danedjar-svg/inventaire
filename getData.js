@@ -543,6 +543,8 @@ async function definirStock(code = selectedCode, valeur = null) {
 
 /* ===================== SCANNER ===================== */
 
+let scanActionCode = "";
+
 async function handleBarcodeScan(event) {
   if (event.key !== "Enter") return;
 
@@ -601,41 +603,63 @@ async function handleBarcodeScan(event) {
     return;
   }
 
-  const choix = prompt(
-    "Entrée / Sortie\n\nProduit : " + produit.nom +
-    "\nStock actuel : " + toNum(produit.stockCell.textContent, 0) +
-    "\n\n1 = Entrée" +
-    "\n2 = Sortie"
-  );
+  openScanActionModal(code, produit);
+}
 
-  if (choix === "1" || choix === "2") {
-    const qteStr = prompt("Quantité à " + (choix === "1" ? "entrer" : "sortir") + " :", "1");
+function openScanActionModal(code, produit) {
+  scanActionCode = code;
 
-    if (qteStr === null) {
-      result.textContent = "Action annulée : " + produit.nom;
-      input.value = "";
-      input.focus();
-      return;
-    }
+  $("scan_action_produit_label").textContent =
+    "Produit : " + produit.nom + " (stock actuel : " + toNum(produit.stockCell.textContent, 0) + ")";
 
-    const quantite = toNum(qteStr, NaN);
+  document.querySelector('input[name="scan_action_type"][value="entree"]').checked = true;
+  $("scan_action_quantite").value = 1;
 
-    if (!Number.isFinite(quantite) || quantite <= 0) {
-      showToast("Quantité invalide.", "warning");
-      input.value = "";
-      input.focus();
-      return;
-    }
+  $("modal_scan_action").style.display = "flex";
+  $("scan_action_quantite").focus();
+  $("scan_action_quantite").select();
+}
 
-    const stockActuel = toNum(produit.stockCell.textContent, 0);
-    const nouveau = choix === "1" ? stockActuel + quantite : stockActuel - quantite;
-    const ok = await updateStock(code, nouveau);
+function closeScanActionModal(event) {
+  if (event && event.target !== $("modal_scan_action")) return;
+  $("modal_scan_action").style.display = "none";
 
-    if (ok) {
-      result.textContent = (choix === "1" ? "Entrée +" : "Sortie -") + quantite + " : " + produit.nom;
-    }
-  } else {
-    result.textContent = "Action annulée : " + produit.nom;
+  const input = $("barcode_input");
+  const result = $("barcode_result");
+  const produit = produitsParCode[scanActionCode];
+  if (produit) result.textContent = "Action annulée : " + produit.nom;
+  input.value = "";
+  input.focus();
+}
+
+async function validerScanAction() {
+  const code = scanActionCode;
+  const produit = produitsParCode[code];
+  const input = $("barcode_input");
+  const result = $("barcode_result");
+
+  if (!produit) {
+    $("modal_scan_action").style.display = "none";
+    return;
+  }
+
+  const type = document.querySelector('input[name="scan_action_type"]:checked').value;
+  const quantite = toNum($("scan_action_quantite").value, NaN);
+
+  if (!Number.isFinite(quantite) || quantite <= 0) {
+    showToast("Quantité invalide.", "warning");
+    return;
+  }
+
+  const stockActuel = toNum(produit.stockCell.textContent, 0);
+  const nouveau = type === "entree" ? stockActuel + quantite : stockActuel - quantite;
+
+  const ok = await updateStock(code, nouveau);
+
+  $("modal_scan_action").style.display = "none";
+
+  if (ok) {
+    result.textContent = (type === "entree" ? "Entrée +" : "Sortie -") + quantite + " : " + produit.nom;
   }
 
   input.value = "";
