@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="getData.js?v=2000019" defer></script>
+  <script src="getData.js?v=2000021" defer></script>
 </head>
 
 <body>
@@ -273,6 +273,31 @@
             </div>
           </div>
           <div class="modal-field">
+            <label>Système</label>
+            <select id="m_new_systeme">
+              <option value="">-- Choisir --</option>
+              <option value="Comble Lacune">Comble Lacune</option>
+              <option value="Porte Voyageur">Porte Voyageur</option>
+              <option value="Porte Interne">Porte Interne</option>
+              <option value="Porte Cabine">Porte Cabine</option>
+              <option value="EQS">EQS</option>
+              <option value="Contrôle Commande">Contrôle Commande</option>
+              <option value="Batterie">Batterie</option>
+              <option value="Sonno">Sonno</option>
+              <option value="CCTV">CCTV</option>
+              <option value="Eclairage">Eclairage</option>
+              <option value="WC">WC</option>
+              <option value="Compresseur">Compresseur</option>
+              <option value="Frein">Frein</option>
+              <option value="Clim Cabine">Clim Cabine</option>
+              <option value="Clim Voyageur">Clim Voyageur</option>
+              <option value="Traction">Traction</option>
+              <option value="TCMS">TCMS</option>
+              <option value="TCN">TCN</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="modal-field">
             <label>Emplacement</label>
             <select id="m_new_emplacement">
               <option value="">-- Choisir --</option>
@@ -309,6 +334,31 @@
                   <label>Stock max</label>
                   <input id="m_edit_stock_max" type="number" min="0">
                 </div>
+              </div>
+              <div class="modal-field">
+                <label>Système</label>
+                <select id="m_edit_systeme">
+                  <option value="">-- Choisir --</option>
+                  <option value="Comble Lacune">Comble Lacune</option>
+                  <option value="Porte Voyageur">Porte Voyageur</option>
+                  <option value="Porte Interne">Porte Interne</option>
+                  <option value="Porte Cabine">Porte Cabine</option>
+                  <option value="EQS">EQS</option>
+                  <option value="Contrôle Commande">Contrôle Commande</option>
+                  <option value="Batterie">Batterie</option>
+                  <option value="Sonno">Sonno</option>
+                  <option value="CCTV">CCTV</option>
+                  <option value="Eclairage">Eclairage</option>
+                  <option value="WC">WC</option>
+                  <option value="Compresseur">Compresseur</option>
+                  <option value="Frein">Frein</option>
+                  <option value="Clim Cabine">Clim Cabine</option>
+                  <option value="Clim Voyageur">Clim Voyageur</option>
+                  <option value="Traction">Traction</option>
+                  <option value="TCMS">TCMS</option>
+                  <option value="TCN">TCN</option>
+                  <option value="Autre">Autre</option>
+                </select>
               </div>
               <div class="modal-field">
                 <label>Emplacement</label>

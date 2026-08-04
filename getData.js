@@ -1,4 +1,33 @@
 const LOGIN_KEY = "inventaire_logged_in";
+
+const SYSTEME_OPTIONS = [
+  "Comble Lacune",
+  "Porte Voyageur",
+  "Porte Interne",
+  "Porte Cabine",
+  "EQS",
+  "Contrôle Commande",
+  "Batterie",
+  "Sonno",
+  "CCTV",
+  "Eclairage",
+  "WC",
+  "Compresseur",
+  "Frein",
+  "Clim Cabine",
+  "Clim Voyageur",
+  "Traction",
+  "TCMS",
+  "TCN",
+  "Autre"
+];
+
+function systemeOptionsHTML(includeChoisir) {
+  const opts = SYSTEME_OPTIONS.map(
+    s => `<option value="${s}">${s}</option>`
+  ).join("");
+  return includeChoisir ? `<option value="">-- Choisir --</option>${opts}` : opts;
+}
 let isAdmin = false;
 
 let produitsParCode = {};
@@ -7,6 +36,7 @@ let allProductsData = [];
 
 let stockFilterMode = "all";
 let emplacementFilterMode = "all";
+let systemeFilterMode = "all";
 
 let currentLetter = "A";
 let currentFilteredData = [];
@@ -214,6 +244,12 @@ function applyFilters() {
     );
   }
 
+  if (systemeFilterMode !== "all") {
+    filteredData = filteredData.filter(item =>
+      (item.systeme || "") === systemeFilterMode
+    );
+  }
+
   const searchInput = document.querySelector(".search-bar");
   const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
@@ -317,6 +353,20 @@ function renderTable(data) {
   thMax.textContent = "Max";
   trHead.appendChild(thMax);
 
+  const thSysteme = document.createElement("th");
+  const systemeFilter = document.createElement("select");
+  systemeFilter.innerHTML = `
+    <option value="all">Système : Tous</option>
+    ${systemeOptionsHTML(false)}
+  `;
+  systemeFilter.value = systemeFilterMode;
+  systemeFilter.onchange = function () {
+    systemeFilterMode = this.value;
+    applyFilters();
+  };
+  thSysteme.appendChild(systemeFilter);
+  trHead.appendChild(thSysteme);
+
   const thEmplacement = document.createElement("th");
   const emplacementFilter = document.createElement("select");
   emplacementFilter.innerHTML = `
@@ -380,6 +430,31 @@ function renderTable(data) {
     const tdMax = document.createElement("td");
     tdMax.textContent = item.stock_max ?? 7;
     tr.appendChild(tdMax);
+
+    const tdSysteme = document.createElement("td");
+    const systemeSelect = document.createElement("select");
+    systemeSelect.innerHTML = systemeOptionsHTML(true);
+    systemeSelect.value = item.systeme || "";
+
+    systemeSelect.onchange = async function (event) {
+      event.stopPropagation();
+
+      const { error } = await supabaseClient
+        .from("produit")
+        .update({ systeme: this.value })
+        .eq("code_barre", code);
+
+      if (error) {
+        console.error(error);
+        showToast("Erreur changement système.", "error");
+        return;
+      }
+
+      await getData();
+    };
+
+    tdSysteme.appendChild(systemeSelect);
+    tr.appendChild(tdSysteme);
 
     const tdEmplacement = document.createElement("td");
     const emplacementSelect = document.createElement("select");
@@ -733,6 +808,7 @@ async function modalAddProduct() {
   const code = normalizeCode($("m_new_code").value);
   const nom = $("m_new_nom").value.trim();
   const emplacement = $("m_new_emplacement").value;
+  const systeme = $("m_new_systeme").value;
 
   if (!code || !nom || !emplacement) {
     showToast("Référence, nom et emplacement obligatoires.", "warning");
@@ -745,7 +821,8 @@ async function modalAddProduct() {
     stock: toNum($("m_new_stock").value),
     stock_min: toNum($("m_new_stock_min").value),
     stock_max: toNum($("m_new_stock_max").value),
-    emplacement: emplacement
+    emplacement: emplacement,
+    systeme: systeme
   }]);
 
   if (error) {
@@ -760,6 +837,7 @@ async function modalAddProduct() {
   $("m_new_stock_min").value = "1";
   $("m_new_stock_max").value = "7";
   $("m_new_emplacement").value = "";
+  $("m_new_systeme").value = "";
 
   await getData();
   $("modal_produits").style.display = "none";
@@ -780,6 +858,7 @@ function fillEditForm() {
   $("m_edit_stock_min").value = item.stock_min ?? 1;
   $("m_edit_stock_max").value = item.stock_max ?? 7;
   $("m_edit_emplacement").value = item.emplacement || "";
+  $("m_edit_systeme").value = item.systeme || "";
 
   fields.style.display = "block";
 }
@@ -793,7 +872,8 @@ async function modalEditProduct() {
     nom: $("m_edit_nom").value.trim(),
     stock_min: toNum($("m_edit_stock_min").value),
     stock_max: toNum($("m_edit_stock_max").value),
-    emplacement: $("m_edit_emplacement").value
+    emplacement: $("m_edit_emplacement").value,
+    systeme: $("m_edit_systeme").value
   }).eq("code_barre", code);
 
   if (error) {
