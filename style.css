@@ -566,8 +566,9 @@ body {
 #product thead th:nth-child(3) { width: 55px; }
 #product thead th:nth-child(4) { width: 35px; }
 #product thead th:nth-child(5) { width: 35px; }
-#product thead th:nth-child(6) { width: 95px; }
-#product thead th:nth-child(7) { width: 50px; }
+#product thead th:nth-child(6) { width: 130px; }
+#product thead th:nth-child(7) { width: 140px; }
+#product thead th:nth-child(8) { width: 70px; }
 
 #product thead th {
   background: var(--blue-dark);
