@@ -129,7 +129,12 @@ async function logout() {
 
 async function updateUserProfileDisplay() {
   const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    localStorage.removeItem(LOGIN_KEY);
+    $("login_section").style.display = "block";
+    $("inventory_section").style.display = "none";
+    return;
+  }
 
   const meta = user.user_metadata || {};
   const nom = meta.full_name || user.email.split("@")[0];
@@ -1394,14 +1399,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   const { data } = await supabaseClient.auth.getSession();
 
-  if (
-    data.session ||
-    localStorage.getItem(LOGIN_KEY) === "1"
-  ) {
+  if (data.session) {
     $("login_section").style.display = "none";
     $("inventory_section").style.display = "block";
     await updateUserProfileDisplay();
     await getData();
+  } else {
+    localStorage.removeItem(LOGIN_KEY);
+    $("login_section").style.display = "block";
+    $("inventory_section").style.display = "none";
   }
 
   const barcodeInput = $("barcode_input");
